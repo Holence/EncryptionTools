@@ -1,4 +1,5 @@
 import codecs
+import uuid
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -186,19 +187,21 @@ def zip_files(zip_file_path, file_paths):
 def unzip_file(zip_file_path, dst_path):
     
     safe=True
-    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
-        for member in zip_file.infolist():
-            file_path=os.path.join(dst_path, member.filename)
-            if os.path.exists(file_path):
-                print("%s already exsit"%(file_path))
-                safe=False
+    try:
+        with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
+            for member in zip_file.infolist():
+                file_path=os.path.join(dst_path, member.filename)
+                if os.path.exists(file_path):
+                    print("%s already exsit"%(file_path))
+                    safe=False
 
-        if safe:
-            zip_file.extractall(dst_path)
-        else:
-            lazy_input("Zip file will be retained. Process terminated...")
-    
-    return safe
+            if safe:
+                zip_file.extractall(dst_path)
+            else:
+                lazy_input("Zip file will be retained. Process terminated...")
+        return safe
+    except Exception as e:
+        raise e
 
 def open_explorer(file_path):
     if OPEN_EXPLOER:
@@ -406,23 +409,38 @@ def DecryptFile(file_path: str = None, password: str = None):
                 print("Mode: Decrypt File\n")
                 print("Decryption Successed!")
                 file_path = file_path.replace(".encrypt","")
+
+                try:
+                    zip_file_path = file_path+".zip"
+                    with open(zip_file_path, "wb") as f:
+                        f.write(file_decrypt)
+                    if unzip_file(zip_file_path, os.path.dirname(file_path)):
+                        os.remove(zip_file_path)
+                        open_explorer(file_path)
+                        lazy_input("The decrypted file is saved to %s!\nPress Enter to go back..."%file_path)
+                    break
+                except Exception as e:
+                    print(e)
                 
-                zip_file_path = file_path+".zip"
-                with open(zip_file_path, "wb") as f:
-                    f.write(file_decrypt)
-                
-                if unzip_file(zip_file_path, os.path.dirname(file_path)):
-                    os.remove(zip_file_path)
-                    open_explorer(file_path)
-                    lazy_input("The decrypted file is saved to %s!\nPress Enter to go back..."%file_path)
-                
+                os.remove(zip_file_path)
+                print("File cannot decode as zip, it will be saved to a pickle file")
+                if os.path.exists(file_path+".pickle"):
+                    print("%s already exsits!"%file_path)
+                    n,e = os.path.splitext(file_path)
+                    n = n+str(uuid.uuid4())
+                    file_path = n+e
+                file_path = file_path+".pickle"
+                with open(file_path, "wb") as f:
+                    pickle.dump(file_decrypt, f)
+                open_explorer(file_path)
+                lazy_input("File saved to %s\n"%file_path)
                 break
             else:
                 WRONG=True
                 continue
         else:
             break
-            
+
 def Base64EncodeString(input_list: list = None, encoding: str = None):
     os.system("cls")
 
@@ -625,15 +643,31 @@ def Base64DecodeFile(file_path: str = None):
     print("Mode: Base64 Decode File\n")
     
     file_path = file_path.replace(".encode","")
-
-    zip_file_path = file_path+".zip"
-    with open(zip_file_path, "wb") as f:
-        f.write(file_bytes)
     
-    if unzip_file(zip_file_path, os.path.dirname(file_path)):
-        os.remove(zip_file_path)
-        open_explorer(file_path)
-        lazy_input("The Base64 Decoded file is saved to %s!\nPress Enter to go back..."%file_path)
+    try:
+        zip_file_path = file_path+".zip"
+        with open(zip_file_path, "wb") as f:
+            f.write(file_bytes)
+        if unzip_file(zip_file_path, os.path.dirname(file_path)):
+            os.remove(zip_file_path)
+            open_explorer(file_path)
+            lazy_input("The Base64 Decoded file is saved to %s!\nPress Enter to go back..."%file_path)
+        return
+    except Exception as e:
+        print(e)
+    
+    os.remove(zip_file_path)
+    print("File cannot decode as zip, it will be saved to a pickle file")
+    if os.path.exists(file_path+".pickle"):
+        print("%s already exsits!"%file_path)
+        n,e = os.path.splitext(file_path)
+        n = n+str(uuid.uuid4())
+        file_path = n+e
+    file_path = file_path+".pickle"
+    with open(file_path, "wb") as f:
+        pickle.dump(file_bytes, f)
+    open_explorer(file_path)
+    lazy_input("File saved to %s\n"%file_path)
 
 def CompressFile(file_paths: list = None):
     os.system("cls")
@@ -715,15 +749,33 @@ def DecompressFile(file_path: str = None):
     
     os.system("cls")
     print("Mode: Decompress File\n")
+    file_path = file_path.replace(".compress","")
     
-    zip_file_path = file_path.replace(".compress","")
-    with open(zip_file_path, "wb") as f:
-        f.write(file_bytes)
-    
-    if unzip_file(zip_file_path, os.path.dirname(file_path)):
-        os.remove(zip_file_path)
-        open_explorer(file_path)
-        lazy_input("The decompressed file is saved to %s!\nPress Enter to go back..."%file_path)
+    try:
+        zip_file_path = file_path+".zip"
+        with open(zip_file_path, "wb") as f:
+            f.write(file_bytes)
+        
+        if unzip_file(zip_file_path, os.path.dirname(file_path)):
+            os.remove(zip_file_path)
+            open_explorer(file_path)
+            lazy_input("The decompressed file is saved to %s!\nPress Enter to go back..."%file_path)
+        return
+    except Exception as e:
+        print(e)
+
+    os.remove(zip_file_path)
+    print("File cannot decode as zip, it will be saved to a pickle file")
+    if os.path.exists(file_path+".pickle"):
+        print("%s already exsits!"%file_path)
+        n,e = os.path.splitext(file_path)
+        n = n+str(uuid.uuid4())
+        file_path = n+e
+    file_path = file_path+".pickle"
+    with open(file_path, "wb") as f:
+        pickle.dump(file_bytes, f)
+    open_explorer(file_path)
+    lazy_input("File saved to %s\n"%file_path)
 
 def Console():
     while True:
