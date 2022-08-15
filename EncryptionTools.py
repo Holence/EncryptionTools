@@ -11,6 +11,9 @@ import blosc
 import typing
 import chardet
 
+OPEN_EXPLOER=True
+WIDTH=32
+
 def Generate_Key(password):
     """
     根据password生成一个固定的salt，用salt生成一个PBKDF2，用PBKDF2和password生成key
@@ -91,7 +94,7 @@ def Fernet_Decrypt(password: str, data: bytes):
     except:
         return False
 
-def Base64_Encode(thing, width=40, encoding_for_str="utf-8") -> str:
+def Base64_Encode(thing, encoding_for_str="utf-8") -> str:
     if type(thing)==bytes:
         res=base64.b64encode(thing).decode("ascii")
     elif type(thing)==str:
@@ -99,10 +102,7 @@ def Base64_Encode(thing, width=40, encoding_for_str="utf-8") -> str:
     else:
         res=base64.b64encode(pickle.dumps(thing)).decode("ascii")
 
-    if type(width)==int:
-        return "\n".join([ res[i:i+width] for i in range(0, len(res), width)])
-    else:
-        return res
+    return "\n".join([ res[i:i+WIDTH] for i in range(0, len(res), WIDTH)])
 
 def Base64_Decode(base64_s: str, TYPE: typing.Union[str,bytes,object], encoding_for_str="utf-8"):
     try:
@@ -121,9 +121,9 @@ def Base64_Decode(base64_s: str, TYPE: typing.Union[str,bytes,object], encoding_
     else:
         return res
 
-def Base64_Encode_Save(thing, file_path, width=40, encoding_for_str="utf-8"):
+def Base64_Encode_Save(thing, file_path, encoding_for_str="utf-8"):
     with open(file_path, "w") as f:
-        f.write(Base64_Encode(thing, width, encoding_for_str))
+        f.write(Base64_Encode(thing, encoding_for_str))
 
 def Base64_Decode_Load(file_path, TYPE: typing.Union[str,bytes,object], encoding_for_str="utf-8"):
     with open(file_path, "r") as f:
@@ -167,6 +167,7 @@ def lazy_input(prompt=""):
     return res
 
 def zip_files(zip_file_path, file_paths):
+
     with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as myzip:
         for fp in file_paths:
             if os.path.isdir(fp):
@@ -182,10 +183,28 @@ def zip_files(zip_file_path, file_paths):
                     os.path.basename(fp)
                 )
 
-def open_explorer(file_path):
-    os.popen("explorer /select,\"%s\""%file_path)
+def unzip_file(zip_file_path, dst_path):
+    
+    safe=True
+    with zipfile.ZipFile(zip_file_path, 'r') as zip_file:
+        for member in zip_file.infolist():
+            file_path=os.path.join(dst_path, member.filename)
+            if os.path.exists(file_path):
+                print("%s already exsit"%(file_path))
+                safe=False
 
-def EncryptString():
+        if safe:
+            zip_file.extractall(dst_path)
+        else:
+            lazy_input("Zip file will be retained. Process terminated...")
+    
+    return safe
+
+def open_explorer(file_path):
+    if OPEN_EXPLOER:
+        os.popen("explorer /select,\"%s\""%file_path)
+
+def EncryptString(input_list: list = None, password: str = None):
     os.system("cls")
 
     print("Mode: Encrypt String\n")
@@ -194,65 +213,88 @@ def EncryptString():
 
     sentinel = ""
     # Raw_thing = '\n'.join(iter(lazy_input, sentinel))
-    Raw_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                Raw_thing=Raw_thing[:-1]
-                break
+    if not input_list:
+        input_list=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    input_list.append(c)
             else:
-                Raw_thing += c+"\n"
-        else:
-            Raw_thing=""
-            break
+                input_list=[]
+                break
+    print("-"*50)
+    print()
 
-    if Raw_thing:
-        os.system("cls")
-        print("Mode: Encrypt String\n")
-        password = lazy_input("Input password: ")
+    if input_list:
+        if not password:
+            password = lazy_input("Input password: ")
+        
         if password!=False:
-            Processed_thing = Fernet_Encrypt(password, Raw_thing).decode("ascii")
-            pyperclip.copy(Processed_thing)
+            s = "\n".join(input_list)
+            string_encrypt = Fernet_Encrypt(password, s).decode("ascii")
+            string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
+            pyperclip.copy(string_encrypt)
             lazy_input("The encrypted string is in your clipboard!\nPress Enter to go back...")
 
-def DecryptString():
+def DecryptString(input_list: str = None, password: str = None):
     WRONG=False
+    current_password = password
+    
+    os.system("cls")
+    print("Mode: Decrypt String\n")
+    print("Input encrypted string (end with a new line with Ctrl+D):")
+    print("-"*50)
+    
+    sentinel = ""
+    # Raw_thing = '\n'.join(iter(lazy_input, sentinel))
+    if not input_list:
+        input_list=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    input_list.append(c)
+            else:
+                input_list=[]
+                break
+    
+    if input_list:
+        s = "\n".join(input_list)
+        try:
+            string_bytes = s.encode(encoding="ascii")
+        except Exception as e:
+            os.system("cls")
+            print("Mode: Decrypt String\n")
+            print(e)
+            lazy_input()
+            return
+    else:
+        return
+    
     while True:
         if WRONG==False:
             os.system("cls")
             print("Mode: Decrypt String\n")
-            print("Input encrypted string:")
-            print("-"*50)
-            Processed_thing = lazy_input()
-            if Processed_thing:
-                try:
-                    Processed_thing = Processed_thing.encode(encoding="ascii")
-                except Exception as e:
-                    os.system("cls")
-                    print("Mode: Decrypt String\n")
-                    print(e)
-                    lazy_input()
-                    break
-            else:
-                break
-
-            os.system("cls")
-            print("Mode: Decrypt String\n")
-            password = lazy_input("Input password: ")
+            if not current_password:
+                current_password = lazy_input("Input password: ")
         else:
-            password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
+            current_password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
 
-        if password!=False:
-            Raw_thing = Fernet_Decrypt(password, Processed_thing)
-            if Raw_thing:
+        if current_password!=False:
+            string_decrypt = Fernet_Decrypt(current_password, string_bytes)
+            if string_decrypt:
                 os.system("cls")
                 print("Mode: Decrypt String\n")
                 print("Decryption Successed!")
                 print("-"*50)
-                print(Raw_thing)
+                print(string_decrypt)
                 print("-"*50)
-                pyperclip.copy(Raw_thing)
+                pyperclip.copy(string_decrypt)
                 lazy_input("The decrypted string is in your clipboard!\nPress Enter to go back...")
                 break
             else:
@@ -261,109 +303,119 @@ def DecryptString():
         else:
             break
             
-def EncryptFile():
+def EncryptFile(file_paths: list = None, password: str = None):
     os.system("cls")
 
     print("Mode: Encrypt File\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
-    file_paths=[]
     sentinel = ""
     
-    Raw_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                break
-            else:
-                c=fix_path(c)
-                if c:
+    if not file_paths:
+        file_paths=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    c=fix_path(c)
                     if os.path.exists(c):
                         file_paths.append(c)
                         print("%s added"%c)
                     else:
                         print("%s will be ignored since it does not exist!"%c)
-        else:
-            file_paths=[]
-            break
-    
+            else:
+                file_paths=[]
+                break
+    else:
+        input_file_path=file_paths
+        file_paths=[]
+        for c in input_file_path:
+            c=fix_path(c)
+            if os.path.exists(c):
+                print("%s added"%c)
+                file_paths.append(c)
+            else:
+                print("%s will be ignored since it does not exist!"%c)
+    print("-"*50)
+    print()
+
     if file_paths:
-
-        if len(file_paths)==1 and os.path.isfile(file_paths[0]):
-            single_file=True
-        else:
-            single_file=False
         
-        if single_file:
-            file_path=file_paths[0]
-        else:
-            print("Making zip file...")
-            file_path=file_paths[0]+".zip"
-            zip_files(file_path, file_paths)
+        if not password:
+            password = lazy_input("Input password: ")
         
-        try:
-            with open(file_path, "rb") as f:
-                Raw_thing=f.read()
-        except Exception as e:
-            print(e)
-            if not single_file:
-                os.remove(file_path)
-            lazy_input()
-            return
-        
-        if not single_file:
-            os.remove(file_path)
-        
-        os.system("cls")
-        print("Mode: Encrypt File\n")
-        password = lazy_input("Input password: ")
         if password!=False:
-            print("Encrypting...")
-            file_path = file_path+".encrypt"
-            Fernet_Encrypt_Save(password, Raw_thing, file_path)
-            open_explorer(file_path)
-            lazy_input("The encrypted file is saved to %s!\nPress Enter to go back..."%file_path)
+            
+            print("Making zip file...")
+            zip_file_path=file_paths[0]+".zip"
+            zip_files(zip_file_path, file_paths)
+            
+            try:
+                with open(zip_file_path, "rb") as f:
+                    files_bytes=f.read()
+            except Exception as e:
+                print(e)
+                os.remove(zip_file_path)
+                lazy_input()
+                return
+            
+            os.remove(zip_file_path)
 
-def DecryptFile():
+            print("Encrypting...")
+            dst_file_path = file_paths[0]+".encrypt"
+            Fernet_Encrypt_Save(password, files_bytes, dst_file_path)
+            open_explorer(dst_file_path)
+            lazy_input("The encrypted file is saved to %s!\nPress Enter to go back..."%dst_file_path)
+
+def DecryptFile(file_path: str = None, password: str = None):
     WRONG=False
+    current_password = password
     while True:
         if WRONG==False:
             os.system("cls")
             print("Mode: Decrypt File\n")
-            file_path=lazy_input("Input encrypted file path: ")
-            if file_path:
-                file_path=fix_path(file_path)
-                try:
-                    with open(file_path,"rb") as f:
-                        Processed_thing=blosc.decompress(f.read())
-                except Exception as e:
-                    print(e)
-                    lazy_input()
+
+            if not file_path:
+                file_path=lazy_input("Input encrypted file path: ")
+                if file_path!=False:
+                    file_path=fix_path(file_path)
+                else:
                     break
-            else:
+            try:
+                print("Opening encrypted file...")
+                with open(file_path,"rb") as f:
+                    file_bytes=blosc.decompress(f.read())
+            except Exception as e:
+                print(e)
+                lazy_input()
                 break
 
             os.system("cls")
             print("Mode: Decrypt File\n")
-            password = lazy_input("Input password: ")
+            if not current_password:
+                current_password = lazy_input("Input password: ")
         else:
-            password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
+            current_password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
         
-        if password!=False:
-            Raw_thing = Fernet_Decrypt(password, Processed_thing)
-            if Raw_thing:
+        if current_password!=False:
+            file_decrypt = Fernet_Decrypt(current_password, file_bytes)
+            if file_decrypt:
                 os.system("cls")
                 print("Mode: Decrypt File\n")
                 print("Decryption Successed!")
                 file_path = file_path.replace(".encrypt","")
-                name, ext = os.path.splitext(file_path)
-                name = name+"-decrypt"
-                file_path = name+ext
-                with open(file_path, "wb") as f:
-                    f.write(Raw_thing)
-                open_explorer(file_path)
-                lazy_input("The decrypted file is saved to %s!\nPress Enter to go back..."%file_path)
+                
+                zip_file_path = file_path+".zip"
+                with open(zip_file_path, "wb") as f:
+                    f.write(file_decrypt)
+                
+                if unzip_file(zip_file_path, os.path.dirname(file_path)):
+                    os.remove(zip_file_path)
+                    open_explorer(file_path)
+                    lazy_input("The decrypted file is saved to %s!\nPress Enter to go back..."%file_path)
+                
                 break
             else:
                 WRONG=True
@@ -371,7 +423,7 @@ def DecryptFile():
         else:
             break
             
-def Base64EncodeString():
+def Base64EncodeString(input_list: list = None, encoding: str = None):
     os.system("cls")
 
     print("Mode: Base64 Encode String\n")
@@ -380,40 +432,48 @@ def Base64EncodeString():
 
     sentinel = ""
     # Raw_thing = '\n'.join(iter(lazy_input, sentinel))
-    Raw_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                Raw_thing=Raw_thing[:-1]
-                break
-            else:
-                Raw_thing += c+"\n"
-        else:
-            Raw_thing=""
-            break
-    
-    if Raw_thing:
+    if not input_list:
+        input_list=[]
         while True:
-            try:
-                os.system("cls")
-                print("Mode: Base64 Encode String\n")
-                encoding = lazy_input("Encoding Codec (default to utf-8): ")
-                if encoding!=False:
-                    encoding = encoding.strip()
-                    if not encoding:
-                        encoding="utf-8"
-                    Processed_thing = codecs.lookup(encoding).encode(Raw_thing)[0]
-                    print("Encoding with %s"%encoding)
-                    Processed_thing = Base64_Encode(Processed_thing)
-                    pyperclip.copy(Processed_thing)
-                    lazy_input("The Base64 Encoded string is in your clipboard!\nPress Enter to go back...")
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    input_list.append(c)
+            else:
+                input_list=[]
                 break
-            except Exception as e:
-                print(e)
-                lazy_input("")
+    print("-"*50)
+    print()
 
-def Base64DecodeString():
+    if input_list:
+        s = "\n".join(input_list)
+        while True:
+
+            if not encoding:
+                encoding = lazy_input("Encoding Codec (default to utf-8): ")
+            
+            if encoding!=False:
+                encoding = encoding.strip()
+                if not encoding:
+                    encoding="utf-8"
+                
+                try:
+                    string_encode = codecs.lookup(encoding).encode(s)[0]
+                    print("Encoding with %s"%encoding)
+                    string_encode = Base64_Encode(string_encode)
+                    pyperclip.copy(string_encode)
+                    lazy_input("The Base64 Encoded string is in your clipboard!\nPress Enter to go back...")
+                    break
+                except Exception as e:
+                    encoding=False
+                    print(e)
+                    lazy_input("")
+            else:
+                break
+
+def Base64DecodeString(input_list: list = None, encoding: str = None):
     os.system("cls")
 
     print("Mode: Base64 Decode String\n")
@@ -421,247 +481,251 @@ def Base64DecodeString():
     print("-"*50)
 
     sentinel = ""
-    # Processed_thing = '\n'.join(iter(lazy_input, sentinel))
-    Processed_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                Processed_thing=Processed_thing[:-1]
-                break
+    # Raw_thing = '\n'.join(iter(lazy_input, sentinel))
+    if not input_list:
+        input_list=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    input_list.append(c)
             else:
-                Processed_thing += c+"\n"
-        else:
-            Processed_thing=""
-            break
+                input_list=[]
+                break
     
-    if Processed_thing:
-        Processed_thing = Base64_Decode(Processed_thing, bytes)
-        if Processed_thing==False:
+    if input_list:
+        s = "\n".join(input_list)
+        string_B_decode = Base64_Decode(s, bytes)
+        if string_B_decode==False:
             print("Decoding Error!")
             lazy_input()
             return
 
-        det=chardet.detect_all(Processed_thing)
+        det=chardet.detect_all(string_B_decode)
         while True:
-            try:
-                os.system("cls")
-                print("Mode: Base64 Decode String\n")
-                print("Codec Detection:")
-                index=0
-                for i in det:
-                    if index==0:
-                        print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"], "\t<-- default")
-                    else:
-                        print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"])
-                    index+=1
-                
+            os.system("cls")
+            print("Mode: Base64 Decode String\n")
+            print("Codec Detection:")
+            index=0
+            for i in det:
+                if index==0:
+                    print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"], "\t<-- default")
+                else:
+                    print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"])
+                index+=1
+            
+            if not encoding:
                 encoding = lazy_input("Decoding Codec: ")
-                if encoding!=False:
-                    encoding = encoding.strip()
-                    if not encoding:
-                        encoding=det[0]["encoding"]
-                    
-                    Raw_thing = codecs.lookup(encoding).decode(Processed_thing)[0]
-                    if Raw_thing:
-                        print("Decoding with %s"%encoding)
-                        print("-"*50)
-                        print(Raw_thing)
-                        print("-"*50)
-                        pyperclip.copy(Raw_thing)
-                        lazy_input("The Base64 Decoded string is in your clipboard!\nPress Enter to go back...")
-                    else:
-                        print("Decoding Error!")
-                        lazy_input()
+            
+            if encoding!=False:
+                encoding = encoding.strip()
+                if not encoding:
+                    encoding=det[0]["encoding"]
+                
+                try:
+                    string_decode = codecs.lookup(encoding).decode(string_B_decode)[0]
+                    print("Decoding with %s"%encoding)
+                    print("-"*50)
+                    print(string_decode)
+                    print("-"*50)
+                    pyperclip.copy(string_decode)
+                    lazy_input("The Base64 Decoded string is in your clipboard!\nPress Enter to go back...")
+                    break
+                except Exception as e:
+                    print(e)
+                    encoding=False
+                    lazy_input("")
+            else:
                 break
-            except Exception as e:
-                print(e)
-                lazy_input("")
 
-def Base64EncodeFile():
+def Base64EncodeFile(file_paths: list = None):
     os.system("cls")
 
     print("Mode: Base64 Encode File\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
-    file_paths=[]
     sentinel = ""
     
-    Raw_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                break
-            else:
-                c=fix_path(c)
-                if c:
+    if not file_paths:
+        file_paths=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    c=fix_path(c)
                     if os.path.exists(c):
                         file_paths.append(c)
                         print("%s added"%c)
                     else:
                         print("%s will be ignored since it does not exist!"%c)
-        else:
-            file_paths=[]
-            break
-    
+            else:
+                file_paths=[]
+                break
+    else:
+        input_file_path=file_paths
+        file_paths=[]
+        for c in input_file_path:
+            c=fix_path(c)
+            if os.path.exists(c):
+                print("%s added"%c)
+                file_paths.append(c)
+            else:
+                print("%s will be ignored since it does not exist!"%c)
+    print("-"*50)
+    print()
+
     if file_paths:
 
-        if len(file_paths)==1 and os.path.isfile(file_paths[0]):
-            single_file=True
-        else:
-            single_file=False
-        
-        if single_file:
-            file_path=file_paths[0]
-        else:
-            print("Making zip file...")
-            file_path=file_paths[0]+".zip"
-            zip_files(file_path, file_paths)
+        print("Making zip file...")
+        zip_file_path=file_paths[0]+".zip"
+        zip_files(zip_file_path, file_paths)
         
         try:
-            with open(file_path, "rb") as f:
-                Raw_thing=f.read()
+            with open(zip_file_path, "rb") as f:
+                files_bytes=f.read()
         except Exception as e:
             print(e)
-            if not single_file:
-                os.remove(file_path)
+            os.remove(zip_file_path)
             lazy_input()
             return
         
-        if not single_file:
-            os.remove(file_path)
+        os.remove(zip_file_path)
         
-        os.system("cls")
-        print("Mode: Base64 Encode File\n")
-        
-        file_path = file_path+".encode"
-        Base64_Encode_Save(Raw_thing, file_path)
-        open_explorer(file_path)
-        lazy_input("The Base64 Encoded file is saved to %s!\nPress Enter to go back..."%file_path)
+        dst_file_path = file_paths[0]+".encode"
+        Base64_Encode_Save(files_bytes, dst_file_path)
+        open_explorer(dst_file_path)
+        lazy_input("The Base64 Encoded file is saved to %s!\nPress Enter to go back..."%dst_file_path)
 
-def Base64DecodeFile():
+def Base64DecodeFile(file_path: str = None):
     os.system("cls")
 
     print("Mode: Base64 Decode File\n")
-    file_path=lazy_input("Input Base64 Encoded file path: ")
-    if file_path:
-        file_path=fix_path(file_path)
-        try:
-            Raw_thing=Base64_Decode_Load(file_path, bytes)
-            if not Raw_thing:
-                print("Decoding Error!")
-                lazy_input()
-                return
-        except Exception as e:
-            print(e)
+    if not file_path:
+        file_path=lazy_input("Input Base64 Encoded file path: ")
+        if file_path:
+            file_path=fix_path(file_path)
+        else:
+            return
+    try:
+        file_bytes=Base64_Decode_Load(file_path, bytes)
+        if not file_bytes:
+            print("Decoding Error!")
             lazy_input()
             return
-        
-        os.system("cls")
-        print("Mode: Base64 Decode File\n")
-        
-        file_path = file_path.replace(".encode","")
-        name, ext = os.path.splitext(file_path)
-        name = name+"-decode"
-        file_path = name+ext
-        with open(file_path, "wb") as f:
-            f.write(Raw_thing)
+    except Exception as e:
+        print(e)
+        lazy_input()
+        return
+    
+    os.system("cls")
+    print("Mode: Base64 Decode File\n")
+    
+    file_path = file_path.replace(".encode","")
+
+    zip_file_path = file_path+".zip"
+    with open(zip_file_path, "wb") as f:
+        f.write(file_bytes)
+    
+    if unzip_file(zip_file_path, os.path.dirname(file_path)):
+        os.remove(zip_file_path)
         open_explorer(file_path)
         lazy_input("The Base64 Decoded file is saved to %s!\nPress Enter to go back..."%file_path)
 
-def CompressFile():
+def CompressFile(file_paths: list = None):
     os.system("cls")
 
     print("Mode: Compress File\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
-    file_paths=[]
     sentinel = ""
     
-    Raw_thing=""
-    while True:
-        c = lazy_input()
-        if c!=False:
-            if c == sentinel:
-                break
-            else:
-                c=fix_path(c)
-                if c:
+    if not file_paths:
+        file_paths=[]
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    c=fix_path(c)
                     if os.path.exists(c):
                         file_paths.append(c)
                         print("%s added"%c)
                     else:
                         print("%s will be ignored since it does not exist!"%c)
-        else:
-            file_paths=[]
-            break
-    
-    if file_paths:
+            else:
+                file_paths=[]
+                break
+    else:
+        input_file_path=file_paths
+        file_paths=[]
+        for c in input_file_path:
+            c=fix_path(c)
+            if os.path.exists(c):
+                print("%s added"%c)
+                file_paths.append(c)
+            else:
+                print("%s will be ignored since it does not exist!"%c)
+    print("-"*50)
+    print()
 
-        if len(file_paths)==1 and os.path.isfile(file_paths[0]):
-            single_file=True
-        else:
-            single_file=False
+    if file_paths:
         
-        if single_file:
-            file_path=file_paths[0]
-        else:
-            print("Making zip file...")
-            file_path=file_paths[0]+".zip"
-            zip_files(file_path, file_paths)
+        print("Making zip file...")
+        zip_file_path=file_paths[0]+".zip"
+        zip_files(zip_file_path, file_paths)
 
         try:
-            with open(file_path, "rb") as f:
-                Raw_thing=f.read()
+            with open(zip_file_path, "rb") as f:
+                files_bytes=f.read()
         except Exception as e:
             print(e)
-            if not single_file:
-                os.remove(file_path)
+            os.remove(zip_file_path)
             lazy_input()
             return
         
-        if not single_file:
-            os.remove(file_path)
+        os.remove(zip_file_path)
         
-        os.system("cls")
-        print("Mode: Compress File\n")
-        file_path = file_path+".compressed"
-        Compress_Save(Raw_thing, file_path)
-        open_explorer(file_path)
-        lazy_input("The compressed file is saved to %s!\nPress Enter to go back..."%file_path)
+        dst_file_path = file_paths[0]+".compress"
+        Compress_Save(files_bytes, dst_file_path)
+        open_explorer(dst_file_path)
+        lazy_input("The compressed file is saved to %s!\nPress Enter to go back..."%dst_file_path)
 
-def DecompressFile():
+def DecompressFile(file_path: str = None):
     os.system("cls")
 
     print("Mode: Decompress File\n")
-    file_path=lazy_input("Input compressed file path: ")
-    if file_path:
-        file_path=fix_path(file_path)
-        try:
-            Processed_thing=Decompress_Load(file_path)
-        except Exception as e:
-            print(e)
-            lazy_input()
+    if not file_path:
+        file_path=lazy_input("Input compressed file path: ")
+        if file_path:
+            file_path=fix_path(file_path)
+        else:
             return
-        
-        os.system("cls")
-        print("Mode: Decompress File\n")
-        
-        file_path = file_path.replace(".compressed","")
-        name, ext = os.path.splitext(file_path)
-        name = name+"-decompress"
-        file_path = name+ext
-        with open(file_path, "wb") as f:
-            f.write(Processed_thing)
+    
+    try:
+        file_bytes=Decompress_Load(file_path)
+    except Exception as e:
+        print(e)
+        lazy_input()
+        return
+    
+    os.system("cls")
+    print("Mode: Decompress File\n")
+    
+    zip_file_path = file_path.replace(".compress","")
+    with open(zip_file_path, "wb") as f:
+        f.write(file_bytes)
+    
+    if unzip_file(zip_file_path, os.path.dirname(file_path)):
+        os.remove(zip_file_path)
         open_explorer(file_path)
         lazy_input("The decompressed file is saved to %s!\nPress Enter to go back..."%file_path)
 
-
-os.system("chcp 65001")
-os.system("cls")
-if __name__=="__main__":
-
+def Console():
     while True:
         os.system("cls")
         mode = lazy_input("""Select Mode:
@@ -705,3 +769,90 @@ if __name__=="__main__":
             DecompressFile()
         else:
             continue
+
+def Command(args):
+    
+    mode=args.mode
+    func=mode_dict[mode]
+    inputs=args.inputs
+    
+    if mode in ["ecs","dcs","ecf","dcf"]:
+        password=args.password
+        if args.encoding:
+            print("Encoding is not needed in mode [ecs,dcs,ecf,dcf]")
+        
+        if mode == "dcf":
+            if len(inputs)>1:
+                lazy_input("Only support decrypting one file at a time\n")
+                exit()
+            elif len(inputs)==1:
+                inputs=inputs[0]
+        
+        func(inputs, password)
+    
+    elif mode in ["bes","bds"]:
+        encoding=args.encoding
+        if args.password:
+            print("Password is not needed in mode [bes,bds,bef,bdf]")
+        
+        func(inputs, encoding)
+    
+    elif mode in ["bef","bdf","cpf","dpf"]:
+        if args.password:
+            print("Password is not needed in mode [bef,bdf,cpf,dpf]")
+        if args.encoding:
+            print("Encoding is not needed in mode [bef,bdf,cpf,dpf]")
+        
+        if mode in ["bdf", "dpf"]:
+            if len(inputs)>1:
+                lazy_input("Only support decoding one thing at a time\n")
+                exit()
+            elif len(inputs)==1:
+                inputs=inputs[0]
+        
+        func(inputs)
+
+
+mode_dict={
+        "ecs": EncryptString,
+        "dcs": DecryptString,
+        "ecf": EncryptFile,
+        "dcf": DecryptFile,
+        "bes": Base64EncodeString,
+        "bds": Base64DecodeString,
+        "bef": Base64EncodeFile,
+        "bdf": Base64DecodeFile,
+        "cpf": CompressFile,
+        "dpf": DecompressFile,
+    }
+
+if __name__=="__main__":
+    os.system("chcp 65001")
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description="""
+        Encrypt String                  ecs
+        Decrypt String                  dcs
+        Encrypt File                    ecf
+        Decrypt File                    dcf
+        Base64 Encode String            bes
+        Base64 Decode String            bds
+        Base64 Encode File              bef
+        Base64 Decode File              bdf
+        Compress File                   cpf
+        Decompress File                 dpf
+    """, formatter_class=argparse.RawTextHelpFormatter, argument_default=argparse.SUPPRESS)
+
+    parser.add_argument('inputs', type=str, nargs="*", default=None, help='inputs')
+    parser.add_argument('-m', dest="mode", type=str, choices=mode_dict.keys(), default="Console", help='choose a mode, or it will run in console')
+    parser.add_argument('-p', dest="password", type=str, default=None, help='password for ecs, dcs, ecf, dcf')
+    parser.add_argument('-e', dest="encoding", type=str, default=None, help='encoding for bes, bds')
+    
+    args = parser.parse_args()
+    if args.mode!="Console":
+        OPEN_EXPLOER=False
+        Command(args)
+    else:
+        OPEN_EXPLOER=True
+        Console()
