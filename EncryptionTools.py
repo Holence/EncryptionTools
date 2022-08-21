@@ -1,4 +1,6 @@
 import codecs
+import msvcrt
+from time import sleep
 import uuid
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -14,6 +16,60 @@ import chardet
 
 OPEN_EXPLOER=True
 WIDTH=32
+taunts_and_responses=[
+    ("阿偉你又在打電動喔，休息一下吧，去看看書好不好？", "煩吶。"),
+    ("我在跟你講話，有沒有聽到？", "你不要煩好不好！"),
+    ("我才說你兩句你就說我煩，我只希望你能夠好好用功讀書，整天只看到你在這邊打電動！", "靠，輸了啦，都是你害的啦，拜託！")
+]
+
+# https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
+# http://jafrog.com/2013/11/23/colors-in-terminal.html
+class bcolors:
+
+    BLACK = "\033[0;30m"
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[0;33m"
+    BLUE = "\033[0;34m"
+    PURPLE = "\033[0;35m"
+    CYAN = "\033[0;36m"
+    GRAY = "\033[0;37m"
+
+    LIGHT_BLACK = "\033[90m"
+    LIGHT_RED = "\033[91m"
+    LIGHT_GREEN = "\033[92m"
+    LIGHT_YELLOW = "\033[93m"
+    LIGHT_BLUE = "\033[94m"
+    LIGHT_PURPLE = "\033[95m"
+    LIGHT_CYAN = "\033[96m"
+    LIGHT_GRAY = "\033[97m"
+
+    BOLD = "\033[1m"
+    FAINT = "\033[2m"
+    ITALIC = "\033[3m"
+    UNDERLINE = "\033[4m"
+    BLINK = "\033[5m"
+    NEGATIVE = "\033[7m"
+    CROSSED = "\033[9m"
+    END = "\033[0m"
+
+# for code in range(30,38):
+#     print( "\033[%sm \\033[%sm \033[0m"%(code,code), end=" ")
+#     print( "\033[%s;1m \\033[%s;1m \033[0m"%(code,code), end=" ")
+#     print( "\033[%s;3m \\033[%s;3m \033[0m"%(code,code), end=" ")
+#     print( "\033[%s;4m \\033[%s;4m \033[0m"%(code,code), end=" ")
+#     print( "\033[%sm \\033[%sm \033[0m"%(code+60,code+60))
+# print(f"{bcolors.GREEN}Hello{bcolors.BOLD}{bcolors.UNDERLINE} World{bcolors.END}")
+
+def color_print(s, mode):
+    if mode=="GOK":
+        print(f"{bcolors.GREEN}{s}{bcolors.END}")
+    elif mode=="BOK":
+        print(f"{bcolors.CYAN}{s}{bcolors.END}")
+    elif mode=="FAIL":
+        print(f"{bcolors.UNDERLINE}{bcolors.BOLD}{bcolors.RED}{s}{bcolors.END}")
+    elif mode=="WARNING":
+        print(f"{bcolors.UNDERLINE}{bcolors.BOLD}{bcolors.YELLOW}{s}{bcolors.END}")
 
 def Generate_Key(password):
     """
@@ -44,7 +100,7 @@ def Fernet_Encrypt_Save(password: str, data, file_path):
         
         return True
     except Exception as e:
-        print(e)
+        color_print(e, "FAIL")
         return False
 
 def Fernet_Decrypt_Load(password: str, file_path):
@@ -192,22 +248,52 @@ def unzip_file(zip_file_path, dst_path):
             for member in zip_file.infolist():
                 file_path=os.path.join(dst_path, member.filename)
                 if os.path.exists(file_path):
-                    print("%s already exsit"%(file_path))
+                    color_print("%s already exsit"%file_path, "WARNING")
                     safe=False
 
             if safe:
                 zip_file.extractall(dst_path)
+                return safe
             else:
-                lazy_input("Zip file will be retained. Process terminated...")
+                pass
+        
+        color_print("Zip file will be retained. Process terminated...", "WARNING")
         return safe
     except Exception as e:
         raise e
 
-def open_explorer(file_path):
+def open_explorer_file(file_path):
     if OPEN_EXPLOER:
         os.popen("explorer /select,\"%s\""%file_path)
 
-def EncryptString(input_list: list = None, password: str = None):
+def open_explorer_dir(file_path):
+    if OPEN_EXPLOER:
+        os.popen("explorer \"%s\""%file_path)
+
+def flush_input():
+    # https://stackoverflow.com/questions/65976696/how-to-ignore-input-while-in-a-loop-python
+    while msvcrt.kbhit():
+        msvcrt.getch()
+
+def slow_print(s):
+    stop_words = ["，","。","！","？","；","：","、"]
+    normal_wait = 0.1
+    stop_wait = 0.5
+    for c in s:
+        flush_input()
+        print(c, end="", flush=True)
+        while True:
+            try:
+                if c in stop_words:
+                    sleep(stop_wait)
+                else:
+                    sleep(normal_wait)
+            except:
+                continue
+            break
+    print()
+
+def EncryptString(input_list: list = None, password: str = None, comment: list = None):
     os.system("cls")
 
     print("Mode: Encrypt String\n")
@@ -233,16 +319,46 @@ def EncryptString(input_list: list = None, password: str = None):
 
     if input_list:
         if not password:
-            password = lazy_input("Input password: ")
+            password = lazy_input("Input password🙈: ")
         
         if password!=False:
             s = "\n".join(input_list)
-            string_encrypt = Fernet_Encrypt(password, s).decode("ascii")
+            
+            os.system("cls")
+            print("Input comment (end with a new line with Ctrl+D):")
+            print("-"*50)
+            if not comment:
+                comment=[]
+                while True:
+                    c = lazy_input()
+                    if c!=False:
+                        if c == sentinel:
+                            break
+                        else:
+                            comment.append(c)
+                    else:
+                        comment=[]
+                        break
+            print("-"*50)
+            print()
+
+            os.system("cls")
+            print("Encrypting...")
+            
+            comment = "\n".join(comment)
+            packed_bytes=pickle.dumps({
+                "comment": comment,
+                "bytes": Fernet_Encrypt(password, s)
+            })
+            string_encrypt = packed_bytes.hex()
             string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
+            color_print("Encryption Successed!", "GOK")
             pyperclip.copy(string_encrypt)
-            lazy_input("The encrypted string is in your clipboard!\nPress Enter to go back...")
+            color_print("The encrypted string is in your clipboard!\n", "BOK")
+            lazy_input("Press Enter to go back...")
 
 def DecryptString(input_list: str = None, password: str = None):
+    try_times=0
     WRONG=False
     current_password = password
     
@@ -269,39 +385,62 @@ def DecryptString(input_list: str = None, password: str = None):
     if input_list:
         s = "\n".join(input_list)
         try:
-            string_bytes = s.encode(encoding="ascii")
+            packed_bytes = pickle.loads(bytes.fromhex(s))
         except Exception as e:
             os.system("cls")
             print("Mode: Decrypt String\n")
-            print(e)
+            color_print(e, "FAIL")
             lazy_input()
             return
     else:
         return
     
+    comment=packed_bytes["comment"]
+    string_encrypt=packed_bytes["bytes"]
+    
     while True:
+        try_times+=1
+        index=try_times-len(taunts_and_responses)
         if WRONG==False:
             os.system("cls")
             print("Mode: Decrypt String\n")
+            print("Comment:")
+            print("-"*50)
+            print(comment)
+            print("-"*50)
             if not current_password:
-                current_password = lazy_input("Input password: ")
+                current_password = lazy_input("Input password🙈: ")
         else:
-            current_password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
+            if index<0:
+                color_print("Wrong Password!!!", "WARNING")
+                current_password = lazy_input("Try again (or Press Ctrl+C to quit): ")
+                print()
+            elif index<len(taunts_and_responses):
+                slow_print(taunts_and_responses[index][0]) # taunt
+                current_password = lazy_input("😅"*(len(taunts_and_responses)-index) + " attempts left: ")
+            else:
+                slow_print("😢😥😥😥😥") # taunt
+                lazy_input()
+                break
 
         if current_password!=False:
-            string_decrypt = Fernet_Decrypt(current_password, string_bytes)
+            string_decrypt = Fernet_Decrypt(current_password, string_encrypt)
             if string_decrypt:
                 os.system("cls")
                 print("Mode: Decrypt String\n")
-                print("Decryption Successed!")
+                color_print("Decryption Successed!","GOK")
                 print("-"*50)
                 print(string_decrypt)
                 print("-"*50)
                 pyperclip.copy(string_decrypt)
-                lazy_input("The decrypted string is in your clipboard!\nPress Enter to go back...")
+                color_print("The decrypted string is in your clipboard!\n", "BOK")
+                lazy_input("Press Enter to go back...")
                 break
             else:
                 WRONG=True
+                if index>=0:
+                    slow_print(taunts_and_responses[index][1]) # responses
+                    print()
                 continue
         else:
             break
@@ -323,11 +462,15 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
                     break
                 else:
                     c=fix_path(c)
-                    if os.path.exists(c):
-                        file_paths.append(c)
-                        print("%s added"%c)
-                    else:
-                        print("%s will be ignored since it does not exist!"%c)
+                    if c.strip():
+                        if os.path.exists(c):
+                            if c not in file_paths:
+                                file_paths.append(c)
+                                color_print("%s added"%c, "GOK")
+                            else:
+                                color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                        else:
+                            color_print("%s will be ignored since it does not exist!"%c, "WARNING")
             else:
                 file_paths=[]
                 break
@@ -336,30 +479,34 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
         file_paths=[]
         for c in input_file_path:
             c=fix_path(c)
-            if os.path.exists(c):
-                print("%s added"%c)
-                file_paths.append(c)
-            else:
-                print("%s will be ignored since it does not exist!"%c)
+            if c.strip():
+                if os.path.exists(c):
+                    if c not in file_paths:
+                        file_paths.append(c)
+                        color_print("%s added"%c, "GOK")
+                    else:
+                        color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                else:
+                    color_print("%s will be ignored since it does not exist!"%c, "WARNING")
     print("-"*50)
     print()
 
     if file_paths:
         
         if not password:
-            password = lazy_input("Input password: ")
+            password = lazy_input("Input password🙈: ")
         
         if password!=False:
             
             print("Making zip file...")
-            zip_file_path=file_paths[0]+".zip"
+            zip_file_path= os.path.join(os.path.dirname(file_paths[0]), str(uuid.uuid4())+".zip")
             zip_files(zip_file_path, file_paths)
             
             try:
                 with open(zip_file_path, "rb") as f:
                     files_bytes=f.read()
             except Exception as e:
-                print(e)
+                color_print(e, "FAIL")
                 os.remove(zip_file_path)
                 lazy_input()
                 return
@@ -384,50 +531,55 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
             print("-"*50)
             print()
 
-            if comment:
-                os.system("cls")
-                print("Encrypting...")
-                
-                comment = "\n".join(comment)
-                encrypted_bytes = Fernet_Encrypt(password, files_bytes)
-                dst_file_path = file_paths[0]+".encrypt"
-                
-                packed_bytes=pickle.dumps({
-                    "comment": comment,
-                    "bytes": encrypted_bytes
-                })
-                with open(dst_file_path,"wb") as f:
-                    f.write(blosc.compress(packed_bytes, cname="zlib"))
+            os.system("cls")
+            print("Encrypting...")
+            
+            comment = "\n".join(comment)
+            encrypted_bytes = Fernet_Encrypt(password, files_bytes)
+            dst_file_path = file_paths[0]+".encrypt"
+            
+            packed_bytes=pickle.dumps({
+                "comment": comment,
+                "bytes": encrypted_bytes
+            })
+            with open(dst_file_path,"wb") as f:
+                f.write(blosc.compress(packed_bytes, cname="zlib"))
 
-                open_explorer(dst_file_path)
-                lazy_input("The encrypted file is saved to %s!\nPress Enter to go back..."%dst_file_path)
+            color_print("Encryption Successed!", "GOK")
+            open_explorer_file(dst_file_path)
+            color_print("The encrypted file is saved to %s!\n"%dst_file_path, "BOK")
+            lazy_input("Press Enter to go back...")
 
 def DecryptFile(file_path: str = None, password: str = None):
+    try_times=0
     WRONG=False
     current_password = password
+
+    os.system("cls")
+    print("Mode: Decrypt File\n")
+
+    if not file_path:
+        file_path=lazy_input("Input encrypted file path: ")
+        if file_path!=False:
+            file_path=fix_path(file_path)
+        else:
+            return
+    try:
+        print("Opening encrypted file...")
+        with open(file_path,"rb") as f:
+            packed_bytes=pickle.loads(blosc.decompress(f.read()))
+    except Exception as e:
+        color_print(e, "FAIL")
+        lazy_input()
+        return
+
+    comment=packed_bytes["comment"]
+    file_encrypt=packed_bytes["bytes"]
+
     while True:
+        try_times+=1
+        index=try_times-len(taunts_and_responses)
         if WRONG==False:
-            os.system("cls")
-            print("Mode: Decrypt File\n")
-
-            if not file_path:
-                file_path=lazy_input("Input encrypted file path: ")
-                if file_path!=False:
-                    file_path=fix_path(file_path)
-                else:
-                    break
-            try:
-                print("Opening encrypted file...")
-                with open(file_path,"rb") as f:
-                    packed_bytes=pickle.loads(blosc.decompress(f.read()))
-            except Exception as e:
-                print(e)
-                lazy_input()
-                break
-            
-            comment=packed_bytes["comment"]
-            file_encrypt=packed_bytes["bytes"]
-
             os.system("cls")
             print("Mode: Decrypt File\n")
             print("Comment:")
@@ -435,16 +587,26 @@ def DecryptFile(file_path: str = None, password: str = None):
             print(comment)
             print("-"*50)
             if not current_password:
-                current_password = lazy_input("Input password: ")
+                current_password = lazy_input("Input password🙈: ")
         else:
-            current_password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
+            if index<0:
+                color_print("Wrong Password!!!", "WARNING")
+                current_password = lazy_input("Try again (or Press Ctrl+C to quit): ")
+                print()
+            elif index<len(taunts_and_responses):
+                slow_print(taunts_and_responses[index][0]) # taunt
+                current_password = lazy_input("😅"*(len(taunts_and_responses)-index) + " attempts left: ")
+            else:
+                slow_print("😢😥😥😥😥") # taunt
+                lazy_input()
+                break
         
         if current_password!=False:
             file_decrypt = Fernet_Decrypt(current_password, file_encrypt)
             if file_decrypt:
                 os.system("cls")
                 print("Mode: Decrypt File\n")
-                print("Decryption Successed!")
+                color_print("Decryption Successed!", "GOK")
                 file_path = file_path.replace(".encrypt","")
 
                 try:
@@ -453,27 +615,31 @@ def DecryptFile(file_path: str = None, password: str = None):
                         f.write(file_decrypt)
                     if unzip_file(zip_file_path, os.path.dirname(file_path)):
                         os.remove(zip_file_path)
-                        open_explorer(file_path)
-                        lazy_input("The decrypted file is saved to %s!\nPress Enter to go back..."%file_path)
+                        color_print("The decrypted file is saved to %s!\n"%file_path, "BOK")
+                    open_explorer_dir(os.path.dirname(file_path))
+                    lazy_input("Press Enter to go back...")
                     break
                 except Exception as e:
-                    print(e)
+                    color_print(e, "FAIL")
                 
                 os.remove(zip_file_path)
-                print("File cannot decode as zip, it will be saved to a pickle file")
+                color_print("File cannot decode as zip, it will be saved to a pickle file", "WARNING")
                 if os.path.exists(file_path+".pickle"):
-                    print("%s already exsits!"%file_path)
+                    color_print("%s already exsits!"%file_path, "WARNING")
                     n,e = os.path.splitext(file_path)
                     n = n+str(uuid.uuid4())
                     file_path = n+e
                 file_path = file_path+".pickle"
                 with open(file_path, "wb") as f:
                     pickle.dump(file_decrypt, f)
-                open_explorer(file_path)
+                open_explorer_file(file_path)
                 lazy_input("File saved to %s\n"%file_path)
                 break
             else:
                 WRONG=True
+                if index>=0:
+                    slow_print(taunts_and_responses[index][1]) # responses
+                    print()
                 continue
         else:
             break
@@ -519,11 +685,12 @@ def Base64EncodeString(input_list: list = None, encoding: str = None):
                     print("Encoding with %s"%encoding)
                     string_encode = Base64_Encode(string_encode)
                     pyperclip.copy(string_encode)
-                    lazy_input("The Base64 Encoded string is in your clipboard!\nPress Enter to go back...")
+                    color_print("The Base64 Encoded string is in your clipboard!\n", "BOK")
+                    lazy_input("Press Enter to go back...")
                     break
                 except Exception as e:
                     encoding=False
-                    print(e)
+                    color_print(e, "FAIL")
                     lazy_input("")
             else:
                 break
@@ -554,7 +721,7 @@ def Base64DecodeString(input_list: list = None, encoding: str = None):
         s = "\n".join(input_list)
         string_B_decode = Base64_Decode(s, bytes)
         if string_B_decode==False:
-            print("Decoding Error!")
+            color_print("Decoding Error!", "FAIL")
             lazy_input()
             return
 
@@ -586,10 +753,11 @@ def Base64DecodeString(input_list: list = None, encoding: str = None):
                     print(string_decode)
                     print("-"*50)
                     pyperclip.copy(string_decode)
-                    lazy_input("The Base64 Decoded string is in your clipboard!\nPress Enter to go back...")
+                    color_print("The Base64 Decoded string is in your clipboard!\n", "BOK")
+                    lazy_input("Press Enter to go back...")
                     break
                 except Exception as e:
-                    print(e)
+                    color_print(e, "FAIL")
                     encoding=False
                     lazy_input("")
             else:
@@ -612,11 +780,15 @@ def Base64EncodeFile(file_paths: list = None):
                     break
                 else:
                     c=fix_path(c)
-                    if os.path.exists(c):
-                        file_paths.append(c)
-                        print("%s added"%c)
-                    else:
-                        print("%s will be ignored since it does not exist!"%c)
+                    if c.strip():
+                        if os.path.exists(c):
+                            if c not in file_paths:
+                                file_paths.append(c)
+                                color_print("%s added"%c, "GOK")
+                            else:
+                                color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                        else:
+                            color_print("%s will be ignored since it does not exist!"%c, "WARNING")
             else:
                 file_paths=[]
                 break
@@ -625,25 +797,29 @@ def Base64EncodeFile(file_paths: list = None):
         file_paths=[]
         for c in input_file_path:
             c=fix_path(c)
-            if os.path.exists(c):
-                print("%s added"%c)
-                file_paths.append(c)
-            else:
-                print("%s will be ignored since it does not exist!"%c)
+            if c.strip():
+                if os.path.exists(c):
+                    if c not in file_paths:
+                        file_paths.append(c)
+                        color_print("%s added"%c, "GOK")
+                    else:
+                        color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                else:
+                    color_print("%s will be ignored since it does not exist!"%c, "WARNING")
     print("-"*50)
     print()
 
     if file_paths:
 
         print("Making zip file...")
-        zip_file_path=file_paths[0]+".zip"
+        zip_file_path= os.path.join(os.path.dirname(file_paths[0]), str(uuid.uuid4())+".zip")
         zip_files(zip_file_path, file_paths)
         
         try:
             with open(zip_file_path, "rb") as f:
                 files_bytes=f.read()
         except Exception as e:
-            print(e)
+            color_print(e, "FAIL")
             os.remove(zip_file_path)
             lazy_input()
             return
@@ -652,8 +828,9 @@ def Base64EncodeFile(file_paths: list = None):
         
         dst_file_path = file_paths[0]+".encode"
         Base64_Encode_Save(files_bytes, dst_file_path)
-        open_explorer(dst_file_path)
-        lazy_input("The Base64 Encoded file is saved to %s!\nPress Enter to go back..."%dst_file_path)
+        open_explorer_file(dst_file_path)
+        color_print("The Base64 Encoded file is saved to %s!\n"%dst_file_path, "BOK")
+        lazy_input("Press Enter to go back...")
 
 def Base64DecodeFile(file_path: str = None):
     os.system("cls")
@@ -668,11 +845,11 @@ def Base64DecodeFile(file_path: str = None):
     try:
         file_bytes=Base64_Decode_Load(file_path, bytes)
         if not file_bytes:
-            print("Decoding Error!")
+            color_print("Decoding Error!", "FAIL")
             lazy_input()
             return
     except Exception as e:
-        print(e)
+        color_print(e, "FAIL")
         lazy_input()
         return
     
@@ -685,25 +862,27 @@ def Base64DecodeFile(file_path: str = None):
         zip_file_path = file_path+".zip"
         with open(zip_file_path, "wb") as f:
             f.write(file_bytes)
+        
         if unzip_file(zip_file_path, os.path.dirname(file_path)):
             os.remove(zip_file_path)
-            open_explorer(file_path)
-            lazy_input("The Base64 Decoded file is saved to %s!\nPress Enter to go back..."%file_path)
+            color_print("The Base64 Decoded file is saved to %s!\n"%file_path, "BOK")
+        open_explorer_dir(os.path.dirname(file_path))
+        lazy_input("Press Enter to go back...")
         return
     except Exception as e:
-        print(e)
+        color_print(e, "FAIL")
     
     os.remove(zip_file_path)
-    print("File cannot decode as zip, it will be saved to a pickle file")
+    color_print("File cannot decode as zip, it will be saved to a pickle file", "WARNING")
     if os.path.exists(file_path+".pickle"):
-        print("%s already exsits!"%file_path)
+        color_print("%s already exsits!"%file_path, "WARNING")
         n,e = os.path.splitext(file_path)
         n = n+str(uuid.uuid4())
         file_path = n+e
     file_path = file_path+".pickle"
     with open(file_path, "wb") as f:
         pickle.dump(file_bytes, f)
-    open_explorer(file_path)
+    open_explorer_file(file_path)
     lazy_input("File saved to %s\n"%file_path)
 
 def CompressFile(file_paths: list = None):
@@ -723,11 +902,15 @@ def CompressFile(file_paths: list = None):
                     break
                 else:
                     c=fix_path(c)
-                    if os.path.exists(c):
-                        file_paths.append(c)
-                        print("%s added"%c)
-                    else:
-                        print("%s will be ignored since it does not exist!"%c)
+                    if c.strip():
+                        if os.path.exists(c):
+                            if c not in file_paths:
+                                file_paths.append(c)
+                                color_print("%s added"%c, "GOK")
+                            else:
+                                color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                        else:
+                            color_print("%s will be ignored since it does not exist!"%c, "WARNING")
             else:
                 file_paths=[]
                 break
@@ -736,25 +919,29 @@ def CompressFile(file_paths: list = None):
         file_paths=[]
         for c in input_file_path:
             c=fix_path(c)
-            if os.path.exists(c):
-                print("%s added"%c)
-                file_paths.append(c)
-            else:
-                print("%s will be ignored since it does not exist!"%c)
+            if c.strip():
+                if os.path.exists(c):
+                    if c not in file_paths:
+                        file_paths.append(c)
+                        color_print("%s added"%c, "GOK")
+                    else:
+                        color_print("%s will be ignored since it's already in list!"%c, "WARNING")
+                else:
+                    color_print("%s will be ignored since it does not exist!"%c, "WARNING")
     print("-"*50)
     print()
 
     if file_paths:
         
         print("Making zip file...")
-        zip_file_path=file_paths[0]+".zip"
+        zip_file_path= os.path.join(os.path.dirname(file_paths[0]), str(uuid.uuid4())+".zip")
         zip_files(zip_file_path, file_paths)
 
         try:
             with open(zip_file_path, "rb") as f:
                 files_bytes=f.read()
         except Exception as e:
-            print(e)
+            color_print(e, "FAIL")
             os.remove(zip_file_path)
             lazy_input()
             return
@@ -763,8 +950,9 @@ def CompressFile(file_paths: list = None):
         
         dst_file_path = file_paths[0]+".compress"
         Compress_Save(files_bytes, dst_file_path)
-        open_explorer(dst_file_path)
-        lazy_input("The compressed file is saved to %s!\nPress Enter to go back..."%dst_file_path)
+        open_explorer_file(dst_file_path)
+        color_print("The compressed file is saved to %s!\n"%dst_file_path, "BOK")
+        lazy_input("Press Enter to go back...")
 
 def DecompressFile(file_path: str = None):
     os.system("cls")
@@ -780,7 +968,7 @@ def DecompressFile(file_path: str = None):
     try:
         file_bytes=Decompress_Load(file_path)
     except Exception as e:
-        print(e)
+        color_print(e, "FAIL")
         lazy_input()
         return
     
@@ -795,39 +983,39 @@ def DecompressFile(file_path: str = None):
         
         if unzip_file(zip_file_path, os.path.dirname(file_path)):
             os.remove(zip_file_path)
-            open_explorer(file_path)
-            lazy_input("The decompressed file is saved to %s!\nPress Enter to go back..."%file_path)
+            color_print("The decompressed file is saved to %s!\n"%file_path, "BOK")
+        open_explorer_dir(os.path.dirname(file_path))
+        lazy_input("Press Enter to go back...")
         return
     except Exception as e:
-        print(e)
+        color_print(e, "FAIL")
 
     os.remove(zip_file_path)
-    print("File cannot decode as zip, it will be saved to a pickle file")
+    color_print("File cannot decode as zip, it will be saved to a pickle file", "WARNING")
     if os.path.exists(file_path+".pickle"):
-        print("%s already exsits!"%file_path)
+        color_print("%s already exsits!"%file_path, "WARNING")
         n,e = os.path.splitext(file_path)
         n = n+str(uuid.uuid4())
         file_path = n+e
     file_path = file_path+".pickle"
     with open(file_path, "wb") as f:
         pickle.dump(file_bytes, f)
-    open_explorer(file_path)
+    open_explorer_file(file_path)
     lazy_input("File saved to %s\n"%file_path)
 
 def Console():
     while True:
         os.system("cls")
-        mode = lazy_input("""Select Mode:
+        mode = print(f"""Select Mode:
 
-        1. Encrypt String           5. Base64 Encode String             9. Compress File
-        2. Decrypt String           6. Base64 Decode String             10. Decompress File
-        3. Encrypt File             7. Base64 Encode File
-        4. Decrypt File             8. Base64 Decode File
-
-                                        Exit: Ctrl+C
-
-                                            """)
+        {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
+        {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
+        {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}
+        {bcolors.LIGHT_GREEN}04.{bcolors.END} {bcolors.UNDERLINE}Decrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}08.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode File{bcolors.END}
+""")
+        print(f"                                        {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Exit: Ctrl+C{bcolors.END}\n")
         
+        mode = lazy_input("                                        ")
         if mode==False:
             break
 
@@ -869,7 +1057,7 @@ def Command(args):
     if mode in ["ecs","dcs","ecf","dcf"]:
         password=args.password
         if args.encoding:
-            print("Encoding is not needed in mode [ecs,dcs,ecf,dcf]")
+            color_print("Encoding is not needed in mode [ecs,dcs,ecf,dcf]", "WARNING")
         
         if mode == "dcf":
             if len(inputs)>1:
@@ -878,7 +1066,7 @@ def Command(args):
             elif len(inputs)==1:
                 inputs=inputs[0]
         
-        if mode == "ecf":
+        if mode in ["ecs", "ecf"]:
             func(inputs, password, comment)
         else:
             func(inputs, password)
@@ -886,15 +1074,15 @@ def Command(args):
     elif mode in ["bes","bds"]:
         encoding=args.encoding
         if args.password:
-            print("Password is not needed in mode [bes,bds,bef,bdf]")
+            color_print("Password is not needed in mode [bes,bds,bef,bdf]", "WARNING")
         
         func(inputs, encoding)
     
     elif mode in ["bef","bdf","cpf","dpf"]:
         if args.password:
-            print("Password is not needed in mode [bef,bdf,cpf,dpf]")
+            color_print("Password is not needed in mode [bef,bdf,cpf,dpf]", "WARNING")
         if args.encoding:
-            print("Encoding is not needed in mode [bef,bdf,cpf,dpf]")
+            color_print("Encoding is not needed in mode [bef,bdf,cpf,dpf]", "WARNING")
         
         if mode in ["bdf", "dpf"]:
             if len(inputs)>1:
@@ -941,7 +1129,7 @@ if __name__=="__main__":
     parser.add_argument('-m', dest="mode", type=str, choices=mode_dict.keys(), default="Console", help='choose a mode, or it will run in console')
     parser.add_argument('-p', dest="password", type=str, default=None, help='password for ecs, dcs, ecf, dcf')
     parser.add_argument('-e', dest="encoding", type=str, default=None, help='encoding for bes, bds')
-    parser.add_argument('-c', dest="comment", nargs="*", type=str, default=None, help='comment for ecf')
+    parser.add_argument('-c', dest="comment", nargs="*", type=str, default=None, help='comment for ecs, ecf')
     
     args = parser.parse_args()
     if args.mode!="Console":

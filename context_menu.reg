@@ -53,7 +53,7 @@ Windows Registry Editor Version 5.00
 @="Open Console"
 "CommandFlags"=dword:00000040
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\a_console\command]
-@="\"ROOT_PATH\\EncryptionTools.exe\""
+@="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100"
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell]
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\b_encryptfile]
@@ -87,7 +87,7 @@ Windows Registry Editor Version 5.00
 @="Open Console"
 "CommandFlags"=dword:00000040
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\a_console\command]
-@="\"ROOT_PATH\\EncryptionTools.exe\""
+@="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell]
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\b_encryptfile]
