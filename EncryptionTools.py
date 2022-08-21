@@ -319,7 +319,7 @@ def EncryptString(input_list: list = None, password: str = None, comment: list =
 
     if input_list:
         if not password:
-            password = lazy_input("Input password🙈: ")
+            password = lazy_input("Input password: ")
         
         if password!=False:
             s = "\n".join(input_list)
@@ -409,7 +409,7 @@ def DecryptString(input_list: str = None, password: str = None):
             print(comment)
             print("-"*50)
             if not current_password:
-                current_password = lazy_input("Input password🙈: ")
+                current_password = lazy_input("Input password: ")
         else:
             if index<0:
                 color_print("Wrong Password!!!", "WARNING")
@@ -494,7 +494,7 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
     if file_paths:
         
         if not password:
-            password = lazy_input("Input password🙈: ")
+            password = lazy_input("Input password: ")
         
         if password!=False:
             
@@ -587,7 +587,7 @@ def DecryptFile(file_path: str = None, password: str = None):
             print(comment)
             print("-"*50)
             if not current_password:
-                current_password = lazy_input("Input password🙈: ")
+                current_password = lazy_input("Input password: ")
         else:
             if index<0:
                 color_print("Wrong Password!!!", "WARNING")
