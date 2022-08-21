@@ -306,7 +306,7 @@ def DecryptString(input_list: str = None, password: str = None):
         else:
             break
             
-def EncryptFile(file_paths: list = None, password: str = None):
+def EncryptFile(file_paths: list = None, password: str = None, comment: list = None):
     os.system("cls")
 
     print("Mode: Encrypt File\n")
@@ -366,11 +366,41 @@ def EncryptFile(file_paths: list = None, password: str = None):
             
             os.remove(zip_file_path)
 
-            print("Encrypting...")
-            dst_file_path = file_paths[0]+".encrypt"
-            Fernet_Encrypt_Save(password, files_bytes, dst_file_path)
-            open_explorer(dst_file_path)
-            lazy_input("The encrypted file is saved to %s!\nPress Enter to go back..."%dst_file_path)
+            os.system("cls")
+            print("Input comment (end with a new line with Ctrl+D):")
+            print("-"*50)
+            if not comment:
+                comment=[]
+                while True:
+                    c = lazy_input()
+                    if c!=False:
+                        if c == sentinel:
+                            break
+                        else:
+                            comment.append(c)
+                    else:
+                        comment=[]
+                        break
+            print("-"*50)
+            print()
+
+            if comment:
+                os.system("cls")
+                print("Encrypting...")
+                
+                comment = "\n".join(comment)
+                encrypted_bytes = Fernet_Encrypt(password, files_bytes)
+                dst_file_path = file_paths[0]+".encrypt"
+                
+                packed_bytes=pickle.dumps({
+                    "comment": comment,
+                    "bytes": encrypted_bytes
+                })
+                with open(dst_file_path,"wb") as f:
+                    f.write(blosc.compress(packed_bytes, cname="zlib"))
+
+                open_explorer(dst_file_path)
+                lazy_input("The encrypted file is saved to %s!\nPress Enter to go back..."%dst_file_path)
 
 def DecryptFile(file_path: str = None, password: str = None):
     WRONG=False
@@ -389,21 +419,28 @@ def DecryptFile(file_path: str = None, password: str = None):
             try:
                 print("Opening encrypted file...")
                 with open(file_path,"rb") as f:
-                    file_bytes=blosc.decompress(f.read())
+                    packed_bytes=pickle.loads(blosc.decompress(f.read()))
             except Exception as e:
                 print(e)
                 lazy_input()
                 break
+            
+            comment=packed_bytes["comment"]
+            file_encrypt=packed_bytes["bytes"]
 
             os.system("cls")
             print("Mode: Decrypt File\n")
+            print("Comment:")
+            print("-"*50)
+            print(comment)
+            print("-"*50)
             if not current_password:
                 current_password = lazy_input("Input password: ")
         else:
             current_password = lazy_input("Wrong Password!!!\nTry again (or Press Ctrl+C to quit): ")
         
         if current_password!=False:
-            file_decrypt = Fernet_Decrypt(current_password, file_bytes)
+            file_decrypt = Fernet_Decrypt(current_password, file_encrypt)
             if file_decrypt:
                 os.system("cls")
                 print("Mode: Decrypt File\n")
@@ -827,6 +864,7 @@ def Command(args):
     mode=args.mode
     func=mode_dict[mode]
     inputs=args.inputs
+    comment=args.comment
     
     if mode in ["ecs","dcs","ecf","dcf"]:
         password=args.password
@@ -840,7 +878,10 @@ def Command(args):
             elif len(inputs)==1:
                 inputs=inputs[0]
         
-        func(inputs, password)
+        if mode == "ecf":
+            func(inputs, password, comment)
+        else:
+            func(inputs, password)
     
     elif mode in ["bes","bds"]:
         encoding=args.encoding
@@ -900,6 +941,7 @@ if __name__=="__main__":
     parser.add_argument('-m', dest="mode", type=str, choices=mode_dict.keys(), default="Console", help='choose a mode, or it will run in console')
     parser.add_argument('-p', dest="password", type=str, default=None, help='password for ecs, dcs, ecf, dcf')
     parser.add_argument('-e', dest="encoding", type=str, default=None, help='encoding for bes, bds')
+    parser.add_argument('-c', dest="comment", nargs="*", type=str, default=None, help='comment for ecf')
     
     args = parser.parse_args()
     if args.mode!="Console":
