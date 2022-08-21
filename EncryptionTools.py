@@ -16,11 +16,6 @@ import chardet
 
 OPEN_EXPLOER=True
 WIDTH=32
-taunts_and_responses=[
-    ("阿偉你又在打電動喔，休息一下吧，去看看書好不好？", "煩吶。"),
-    ("我在跟你講話，有沒有聽到？", "你不要煩好不好！"),
-    ("我才說你兩句你就說我煩，我只希望你能夠好好用功讀書，整天只看到你在這邊打電動！", "靠，輸了啦，都是你害的啦，拜託！")
-]
 
 # https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
 # http://jafrog.com/2013/11/23/colors-in-terminal.html
@@ -277,8 +272,8 @@ def flush_input():
 
 def slow_print(s):
     stop_words = ["，","。","！","？","；","：","、"]
-    normal_wait = 0.1
-    stop_wait = 0.5
+    normal_wait = 0.08
+    stop_wait = 0.4
     for c in s:
         flush_input()
         print(c, end="", flush=True)
@@ -292,6 +287,27 @@ def slow_print(s):
                 continue
             break
     print()
+
+# https://www.bilibili.com/video/BV1rA411g7q8
+taunts_and_responses=[
+    ("阿偉你又在打電動喔，休息一下吧，去看看書好不好？", "煩吶。"),
+    ("我在跟你講話，有沒有聽到？", "你不要煩好不好！"),
+    ("我才說你兩句你就說我煩，我只希望你能夠好好用功讀書，整天只看到你在這邊打電動！", "靠，輸了啦，都是你害的啦，拜託！")
+]
+
+# https://zh.moegirl.org.cn/野兽先辈
+李田所="""
+       　  　▃▆█▇▄▖
+　 　 　 ▟◤▖　　　◥█▎
+   　 ◢◤　 ▐　　　 　▐▉
+　 ▗◤　　　▂　▗▖　　▕█▎
+　◤　▗▅▖◥▄　▀◣　　█▊
+▐　▕▎◥▖◣◤　　　　◢██
+█◣　◥▅█▀　　　　▐██◤
+▐█▙▂　　     　◢██◤
+◥██◣　　　　◢▄◤
+ 　　▀██▅▇▀
+"""
 
 def EncryptString(input_list: list = None, password: str = None, comment: list = None):
     os.system("cls")
@@ -412,14 +428,12 @@ def DecryptString(input_list: str = None, password: str = None):
                 current_password = lazy_input("Input password: ")
         else:
             if index<0:
-                color_print("Wrong Password!!!", "WARNING")
                 current_password = lazy_input("Try again (or Press Ctrl+C to quit): ")
-                print()
             elif index<len(taunts_and_responses):
                 slow_print(taunts_and_responses[index][0]) # taunt
-                current_password = lazy_input("😅"*(len(taunts_and_responses)-index) + " attempts left: ")
+                current_password = lazy_input("%s attempts left: "%(len(taunts_and_responses)-index))
             else:
-                slow_print("😢😥😥😥😥") # taunt
+                color_print(李田所, "FAIL") # taunt
                 lazy_input()
                 break
 
@@ -438,6 +452,7 @@ def DecryptString(input_list: str = None, password: str = None):
                 break
             else:
                 WRONG=True
+                color_print("Wrong Password!!!", "FAIL")
                 if index>=0:
                     slow_print(taunts_and_responses[index][1]) # responses
                     print()
@@ -590,14 +605,12 @@ def DecryptFile(file_path: str = None, password: str = None):
                 current_password = lazy_input("Input password: ")
         else:
             if index<0:
-                color_print("Wrong Password!!!", "WARNING")
                 current_password = lazy_input("Try again (or Press Ctrl+C to quit): ")
-                print()
             elif index<len(taunts_and_responses):
                 slow_print(taunts_and_responses[index][0]) # taunt
-                current_password = lazy_input("😅"*(len(taunts_and_responses)-index) + " attempts left: ")
+                current_password = lazy_input("%s attempts left: "%(len(taunts_and_responses)-index))
             else:
-                slow_print("😢😥😥😥😥") # taunt
+                color_print(李田所, "FAIL") # taunt
                 lazy_input()
                 break
         
@@ -637,6 +650,7 @@ def DecryptFile(file_path: str = None, password: str = None):
                 break
             else:
                 WRONG=True
+                color_print("Wrong Password!!!", "FAIL")
                 if index>=0:
                     slow_print(taunts_and_responses[index][1]) # responses
                     print()
