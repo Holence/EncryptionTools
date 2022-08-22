@@ -13,9 +13,7 @@ import pyperclip
 import blosc
 import typing
 import chardet
-
-OPEN_EXPLOER=True
-WIDTH=32
+import configparser
 
 # https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
 # http://jafrog.com/2013/11/23/colors-in-terminal.html
@@ -25,8 +23,8 @@ class bcolors:
     RED = "\033[0;31m"
     GREEN = "\033[0;32m"
     YELLOW = "\033[0;33m"
-    BLUE = "\033[0;34m"
-    PURPLE = "\033[0;35m"
+    PURPLE = "\033[0;34m"
+    PINK = "\033[0;35m"
     CYAN = "\033[0;36m"
     GRAY = "\033[0;37m"
 
@@ -34,8 +32,8 @@ class bcolors:
     LIGHT_RED = "\033[91m"
     LIGHT_GREEN = "\033[92m"
     LIGHT_YELLOW = "\033[93m"
-    LIGHT_BLUE = "\033[94m"
-    LIGHT_PURPLE = "\033[95m"
+    LIGHT_PURPLE = "\033[94m"
+    LIGHT_PINK = "\033[95m"
     LIGHT_CYAN = "\033[96m"
     LIGHT_GRAY = "\033[97m"
 
@@ -272,47 +270,24 @@ def flush_input():
 
 def slow_print(s):
     stop_words = ["，","。","！","？","；","：","、"]
-    normal_wait = 0.08
-    stop_wait = 0.4
     for c in s:
         flush_input()
         print(c, end="", flush=True)
         while True:
             try:
                 if c in stop_words:
-                    sleep(stop_wait)
+                    sleep(DELAY_STOP)
                 else:
-                    sleep(normal_wait)
+                    sleep(DELAY_NORMAL)
             except:
                 continue
             break
     print()
 
-# https://www.bilibili.com/video/BV1rA411g7q8
-taunts_and_responses=[
-    ("阿偉你又在打電動喔，休息一下吧，去看看書好不好？", "煩吶。"),
-    ("我在跟你講話，有沒有聽到？", "你不要煩好不好！"),
-    ("我才說你兩句你就說我煩，我只希望你能夠好好用功讀書，整天只看到你在這邊打電動！", "靠，輸了啦，都是你害的啦，拜託！")
-]
-
-# https://zh.moegirl.org.cn/野兽先辈
-李田所="""
-       　  　▃▆█▇▄▖
-　 　 　 ▟◤▖　　　◥█▎
-   　 ◢◤　 ▐　　　 　▐▉
-　 ▗◤　　　▂　▗▖　　▕█▎
-　◤　▗▅▖◥▄　▀◣　　█▊
-▐　▕▎◥▖◣◤　　　　◢██
-█◣　◥▅█▀　　　　▐██◤
-▐█▙▂　　     　◢██◤
-◥██◣　　　　◢▄◤
- 　　▀██▅▇▀
-"""
-
 def EncryptString(input_list: list = None, password: str = None, comment: list = None):
     os.system("cls")
 
-    print("Mode: Encrypt String\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt String{bcolors.END}\n")
     print("Input raw string (end with a new line with Ctrl+D):")
     print("-"*50)
 
@@ -341,6 +316,7 @@ def EncryptString(input_list: list = None, password: str = None, comment: list =
             s = "\n".join(input_list)
             
             os.system("cls")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt String{bcolors.END}\n")
             print("Input comment (end with a new line with Ctrl+D):")
             print("-"*50)
             if not comment:
@@ -355,23 +331,25 @@ def EncryptString(input_list: list = None, password: str = None, comment: list =
                     else:
                         comment=[]
                         break
-            print("-"*50)
-            print()
+            if comment:
+                print("-"*50)
+                print()
 
-            os.system("cls")
-            print("Encrypting...")
-            
-            comment = "\n".join(comment)
-            packed_bytes=pickle.dumps({
-                "comment": comment,
-                "bytes": Fernet_Encrypt(password, s)
-            })
-            string_encrypt = packed_bytes.hex()
-            string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
-            color_print("Encryption Successed!", "GOK")
-            pyperclip.copy(string_encrypt)
-            color_print("The encrypted string is in your clipboard!\n", "BOK")
-            lazy_input("Press Enter to go back...")
+                os.system("cls")
+                print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt String{bcolors.END}\n")
+                print("Encrypting...")
+                
+                comment = "\n".join(comment)
+                packed_bytes=pickle.dumps({
+                    "comment": comment,
+                    "bytes": Fernet_Encrypt(password, s)
+                })
+                string_encrypt = packed_bytes.hex()
+                string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
+                color_print("Encryption Successed!", "GOK")
+                pyperclip.copy(string_encrypt)
+                color_print("The encrypted string is in your clipboard!\n", "BOK")
+                lazy_input("Press Enter to go back...")
 
 def DecryptString(input_list: str = None, password: str = None):
     try_times=0
@@ -379,7 +357,7 @@ def DecryptString(input_list: str = None, password: str = None):
     current_password = password
     
     os.system("cls")
-    print("Mode: Decrypt String\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt String{bcolors.END}\n")
     print("Input encrypted string (end with a new line with Ctrl+D):")
     print("-"*50)
     
@@ -404,7 +382,7 @@ def DecryptString(input_list: str = None, password: str = None):
             packed_bytes = pickle.loads(bytes.fromhex(s))
         except Exception as e:
             os.system("cls")
-            print("Mode: Decrypt String\n")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt String{bcolors.END}\n")
             color_print(e, "FAIL")
             lazy_input()
             return
@@ -419,7 +397,7 @@ def DecryptString(input_list: str = None, password: str = None):
         index=try_times-len(taunts_and_responses)
         if WRONG==False:
             os.system("cls")
-            print("Mode: Decrypt String\n")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt String{bcolors.END}\n")
             print("Comment:")
             print("-"*50)
             print(comment)
@@ -441,7 +419,7 @@ def DecryptString(input_list: str = None, password: str = None):
             string_decrypt = Fernet_Decrypt(current_password, string_encrypt)
             if string_decrypt:
                 os.system("cls")
-                print("Mode: Decrypt String\n")
+                print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt String{bcolors.END}\n")
                 color_print("Decryption Successed!","GOK")
                 print("-"*50)
                 print(string_decrypt)
@@ -463,7 +441,7 @@ def DecryptString(input_list: str = None, password: str = None):
 def EncryptFile(file_paths: list = None, password: str = None, comment: list = None):
     os.system("cls")
 
-    print("Mode: Encrypt File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt File{bcolors.END}\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
     sentinel = ""
@@ -529,6 +507,7 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
             os.remove(zip_file_path)
 
             os.system("cls")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt File{bcolors.END}\n")
             print("Input comment (end with a new line with Ctrl+D):")
             print("-"*50)
             if not comment:
@@ -546,24 +525,26 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
             print("-"*50)
             print()
 
-            os.system("cls")
-            print("Encrypting...")
-            
-            comment = "\n".join(comment)
-            encrypted_bytes = Fernet_Encrypt(password, files_bytes)
-            dst_file_path = file_paths[0]+".encrypt"
-            
-            packed_bytes=pickle.dumps({
-                "comment": comment,
-                "bytes": encrypted_bytes
-            })
-            with open(dst_file_path,"wb") as f:
-                f.write(blosc.compress(packed_bytes, cname="zlib"))
+            if comment:
+                os.system("cls")
+                print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Encrypt File{bcolors.END}\n")
+                print("Encrypting...")
+                
+                comment = "\n".join(comment)
+                encrypted_bytes = Fernet_Encrypt(password, files_bytes)
+                dst_file_path = file_paths[0]+".encrypt"
+                
+                packed_bytes=pickle.dumps({
+                    "comment": comment,
+                    "bytes": encrypted_bytes
+                })
+                with open(dst_file_path,"wb") as f:
+                    f.write(blosc.compress(packed_bytes, cname="zlib"))
 
-            color_print("Encryption Successed!", "GOK")
-            open_explorer_file(dst_file_path)
-            color_print("The encrypted file is saved to %s!\n"%dst_file_path, "BOK")
-            lazy_input("Press Enter to go back...")
+                color_print("Encryption Successed!", "GOK")
+                open_explorer_file(dst_file_path)
+                color_print("The encrypted file is saved to %s!\n"%dst_file_path, "BOK")
+                lazy_input("Press Enter to go back...")
 
 def DecryptFile(file_path: str = None, password: str = None):
     try_times=0
@@ -571,7 +552,7 @@ def DecryptFile(file_path: str = None, password: str = None):
     current_password = password
 
     os.system("cls")
-    print("Mode: Decrypt File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt File{bcolors.END}\n")
 
     if not file_path:
         file_path=lazy_input("Input encrypted file path: ")
@@ -596,7 +577,7 @@ def DecryptFile(file_path: str = None, password: str = None):
         index=try_times-len(taunts_and_responses)
         if WRONG==False:
             os.system("cls")
-            print("Mode: Decrypt File\n")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt File{bcolors.END}\n")
             print("Comment:")
             print("-"*50)
             print(comment)
@@ -618,7 +599,7 @@ def DecryptFile(file_path: str = None, password: str = None):
             file_decrypt = Fernet_Decrypt(current_password, file_encrypt)
             if file_decrypt:
                 os.system("cls")
-                print("Mode: Decrypt File\n")
+                print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decrypt File{bcolors.END}\n")
                 color_print("Decryption Successed!", "GOK")
                 file_path = file_path.replace(".encrypt","")
 
@@ -660,8 +641,7 @@ def DecryptFile(file_path: str = None, password: str = None):
 
 def Base64EncodeString(input_list: list = None, encoding: str = None):
     os.system("cls")
-
-    print("Mode: Base64 Encode String\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Encode String{bcolors.END}\n")
     print("Input raw string (end with a new line with Ctrl+D):")
     print("-"*50)
 
@@ -711,8 +691,7 @@ def Base64EncodeString(input_list: list = None, encoding: str = None):
 
 def Base64DecodeString(input_list: list = None, encoding: str = None):
     os.system("cls")
-
-    print("Mode: Base64 Decode String\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Decode String{bcolors.END}\n")
     print("Input Base64 Encoded string (end with a new line with Ctrl+D):")
     print("-"*50)
 
@@ -742,12 +721,12 @@ def Base64DecodeString(input_list: list = None, encoding: str = None):
         det=chardet.detect_all(string_B_decode)
         while True:
             os.system("cls")
-            print("Mode: Base64 Decode String\n")
+            print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Decode String{bcolors.END}\n")
             print("Codec Detection:")
             index=0
             for i in det:
                 if index==0:
-                    print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"], "\t<-- default")
+                    print("\t", bcolors.LIGHT_GREEN, "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"], "\t<-- default", bcolors.END)
                 else:
                     print("\t", "%-12s"%i["encoding"], "Confidence:", "%.2f"%i["confidence"], "Language:", i["language"])
                 index+=1
@@ -779,8 +758,7 @@ def Base64DecodeString(input_list: list = None, encoding: str = None):
 
 def Base64EncodeFile(file_paths: list = None):
     os.system("cls")
-
-    print("Mode: Base64 Encode File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Encode File{bcolors.END}\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
     sentinel = ""
@@ -848,8 +826,7 @@ def Base64EncodeFile(file_paths: list = None):
 
 def Base64DecodeFile(file_path: str = None):
     os.system("cls")
-
-    print("Mode: Base64 Decode File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Decode File{bcolors.END}\n")
     if not file_path:
         file_path=lazy_input("Input Base64 Encoded file path: ")
         if file_path:
@@ -868,7 +845,7 @@ def Base64DecodeFile(file_path: str = None):
         return
     
     os.system("cls")
-    print("Mode: Base64 Decode File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Base64 Decode File{bcolors.END}\n")
     
     file_path = file_path.replace(".encode","")
     
@@ -901,8 +878,7 @@ def Base64DecodeFile(file_path: str = None):
 
 def CompressFile(file_paths: list = None):
     os.system("cls")
-
-    print("Mode: Compress File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Compress File{bcolors.END}\n")
     print("Input file path (end with a new line with Ctrl+D):")
     print("-"*50)
     sentinel = ""
@@ -970,8 +946,7 @@ def CompressFile(file_paths: list = None):
 
 def DecompressFile(file_path: str = None):
     os.system("cls")
-
-    print("Mode: Decompress File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decompress File{bcolors.END}\n")
     if not file_path:
         file_path=lazy_input("Input compressed file path: ")
         if file_path:
@@ -987,7 +962,7 @@ def DecompressFile(file_path: str = None):
         return
     
     os.system("cls")
-    print("Mode: Decompress File\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}Mode: Decompress File{bcolors.END}\n")
     file_path = file_path.replace(".compress","")
     
     try:
@@ -1020,7 +995,7 @@ def DecompressFile(file_path: str = None):
 def Console():
     while True:
         os.system("cls")
-        mode = print(f"""Select Mode:
+        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}
 
         {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
         {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
@@ -1108,18 +1083,64 @@ def Command(args):
         func(inputs)
 
 
+config = configparser.ConfigParser()
+config.read("UserSetting.ini")
+
+try:
+    WIDTH=config.getint("DEFAULT", "WIDTH", fallback=32)
+except:
+    WIDTH=32
+config.set("DEFAULT", "WIDTH", str(WIDTH))
+
+try:
+    DELAY_NORMAL=config.getfloat("DEFAULT", "DELAY_NORMAL", fallback=0.07)
+except:
+    DELAY_NORMAL=0.07
+config.set("DEFAULT", "DELAY_NORMAL", str(DELAY_NORMAL))
+
+try:
+    DELAY_STOP=config.getfloat("DEFAULT", "DELAY_STOP", fallback=0.56)
+except:
+    DELAY_STOP=0.56
+config.set("DEFAULT", "DELAY_STOP", str(DELAY_STOP))
+
+with open("UserSetting.ini", "w") as configfile:
+    config.write(configfile)
+
+# https://www.bilibili.com/video/BV1rA411g7q8
+taunts_and_responses=[
+    ("阿偉你又在打電動喔，休息一下吧，去看看書好不好？", "煩吶。"),
+    ("我在跟你講話，有沒有聽到？", "你不要煩好不好！"),
+    ("我才說你兩句你就說我煩，我只希望你能夠好好用功讀書，整天只看到你在這邊打電動！", "靠，輸了啦，都是你害的啦，拜託！")
+]
+
+# https://zh.moegirl.org.cn/野兽先辈
+李田所="""
+       　  　▃▆█▇▄▖
+　 　 　 ▟◤▖　　　◥█▎
+   　 ◢◤　 ▐　　　 　▐▉
+　 ▗◤　　　▂　▗▖　　▕█▎
+　◤　▗▅▖◥▄　▀◣　　█▊
+▐　▕▎◥▖◣◤　　　　◢██
+█◣　◥▅█▀　　　　▐██◤
+▐█▙▂　　     　◢██◤
+◥██◣　　　　◢▄◤
+ 　　▀██▅▇▀
+"""
+
+OPEN_EXPLOER=True
 mode_dict={
-        "ecs": EncryptString,
-        "dcs": DecryptString,
-        "ecf": EncryptFile,
-        "dcf": DecryptFile,
-        "bes": Base64EncodeString,
-        "bds": Base64DecodeString,
-        "bef": Base64EncodeFile,
-        "bdf": Base64DecodeFile,
-        "cpf": CompressFile,
-        "dpf": DecompressFile,
-    }
+    "ecs": EncryptString,
+    "dcs": DecryptString,
+    "ecf": EncryptFile,
+    "dcf": DecryptFile,
+    "bes": Base64EncodeString,
+    "bds": Base64DecodeString,
+    "bef": Base64EncodeFile,
+    "bdf": Base64DecodeFile,
+    "cpf": CompressFile,
+    "dpf": DecompressFile,
+}
 
 if __name__=="__main__":
     os.system("chcp 65001")
