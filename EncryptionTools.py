@@ -464,7 +464,7 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 
                 packed_bytes=pickle.dumps({
                     "comment": comment,
-                    "bytes": blosc.compress(Fernet_Encrypt(password, input_text), cname="zstd")
+                    "bytes": blosc.compress(Fernet_Encrypt(password, bytes(input_text, encoding="utf-8")), cname="zstd")
                 })
                 string_encrypt = packed_bytes.hex()
                 string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
@@ -501,6 +501,7 @@ def DecryptString(input_text: str = None, password: list = None):
     
     string_decrypted=decrypt_with_taunting(current_password, string_encrypt)
     if string_decrypted!=False:
+        string_decrypted=string_decrypted.decode("utf-8")
         flush_console("Mode: Decrypt String")
         color_print("Decryption Successed!","GOK")
         print("-"*50)
@@ -761,12 +762,14 @@ def DecompressFile(file_path: str = None):
 def Console():
     while True:
         os.system("cls")
-        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}
+        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.2{bcolors.END}
+
 
         {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
         {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
         {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}
         {bcolors.LIGHT_GREEN}04.{bcolors.END} {bcolors.UNDERLINE}Decrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}08.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode File{bcolors.END}
+
 """)
         print(f"                                        {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Exit: Ctrl+C{bcolors.END}\n")
         
