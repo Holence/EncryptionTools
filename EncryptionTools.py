@@ -284,22 +284,30 @@ def slow_print(s):
             break
     print()
 
-def input_multiple_lines(placeholder):
+def input_multiple_lines(placeholder, text_list=None):
     sentinel = ""
     print(placeholder)
     print("-"*50)
     text=[]
-    while True:
-        c = lazy_input()
-        if c!=False:
+    if not text_list:
+        while True:
+            c = lazy_input()
+            if c!=False:
+                if c == sentinel:
+                    break
+                else:
+                    text.append(c)
+            else:
+                return False
+        print("-"*50)
+        print()
+    else:
+        for c in text_list:
             if c == sentinel:
                 break
             else:
                 text.append(c)
-        else:
-            return False
-    print("-"*50)
-    print()
+       
     if text:
         text = "\n".join(text)
     else:
@@ -436,18 +444,19 @@ def decrypt_with_taunting(current_password, encrypted_bytes):
     return False
 
 def EncryptString(input_text: list = None, password: list = None, comment: list = None):
+    
     flush_console("Mode: Encrypt String")
-    input_text=input_multiple_lines("Input raw string (end with a new line with Ctrl+D):")
+    input_text=input_multiple_lines("Input raw string (end with a new line with Ctrl+D):", input_text)
 
-    if input_text:
-        if not password:
-            flush_console("Mode: Encrypt String")
-            password=input_multiple_lines("Input password (end with a new line with Ctrl+D):")
+    if input_text!=False:
+        
+        flush_console("Mode: Encrypt String")
+        password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
         
         if password!=False:
-            if not comment:
-                flush_console("Mode: Encrypt String")
-                comment=input_multiple_lines("Input comment (end with a new line with Ctrl+D):")
+            
+            flush_console("Mode: Encrypt String")
+            comment=input_multiple_lines("Input comment (end with a new line with Ctrl+D):", comment)
             
             if comment!=False:
                 flush_console("Mode: Encrypt String")
@@ -455,7 +464,7 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 
                 packed_bytes=pickle.dumps({
                     "comment": comment,
-                    "bytes": Fernet_Encrypt(password, input_text)
+                    "bytes": blosc.compress(Fernet_Encrypt(password, input_text), cname="zstd")
                 })
                 string_encrypt = packed_bytes.hex()
                 string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
@@ -464,11 +473,10 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 color_print("The encrypted string is in your clipboard!\n", "BOK")
                 lazy_input("Press Enter to go back...")
 
-def DecryptString(input_text: str = None, password: str = None):
-    current_password = password
-    
+def DecryptString(input_text: str = None, password: list = None):
+
     flush_console("Mode: Decrypt String")
-    input_text=input_multiple_lines("Input encrypted string (end with a new line with Ctrl+D):")
+    input_text=input_multiple_lines("Input encrypted string (end with a new line with Ctrl+D):", input_text)
     if input_text!=False:
         try:
             packed_bytes = pickle.loads(bytes.fromhex(input_text))
@@ -481,15 +489,15 @@ def DecryptString(input_text: str = None, password: str = None):
         return
     
     comment=packed_bytes["comment"]
-    string_encrypt=packed_bytes["bytes"]
+    string_encrypt=blosc.decompress(packed_bytes["bytes"])
     
     flush_console("Mode: Decrypt String")
     print("Comment:")
     print("-"*50)
     print(comment)
     print("-"*50)
-    if not current_password:
-        current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):")
+    
+    current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
     
     string_decrypted=decrypt_with_taunting(current_password, string_encrypt)
     if string_decrypted!=False:
@@ -502,23 +510,23 @@ def DecryptString(input_text: str = None, password: str = None):
         color_print("The decrypted string is in your clipboard!\n", "BOK")
         lazy_input("Press Enter to go back...")
             
-def EncryptFile(file_paths: list = None, password: str = None, comment: list = None):
+def EncryptFile(file_paths: list = None, password: list = None, comment: list = None):
+    
     flush_console("Mode: Encrypt File")
     file_paths = input_multiple_files(file_paths)
 
     if file_paths:
-        if not password:
-            flush_console("Mode: Encrypt File")
-            password=input_multiple_lines("Input password (end with a new line with Ctrl+D):")
+        
+        flush_console("Mode: Encrypt File")
+        password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
         
         if password!=False:
             flush_console("Mode: Encrypt File")
             print("Making zip file...")
             files_bytes=get_zipped_bytes(file_paths)
 
-            if not comment:
-                flush_console("Mode: Encrypt File")
-                comment=input_multiple_lines("Input comment (end with a new line with Ctrl+D):")
+            flush_console("Mode: Encrypt File")
+            comment=input_multiple_lines("Input comment (end with a new line with Ctrl+D):", comment)
             
             if comment!=False:
                 flush_console("Mode: Encrypt File")
@@ -539,8 +547,7 @@ def EncryptFile(file_paths: list = None, password: str = None, comment: list = N
                 color_print("The encrypted file is saved to %s!\n"%dst_file_path, "BOK")
                 lazy_input("Press Enter to go back...")
 
-def DecryptFile(file_path: str = None, password: str = None):
-    current_password = password
+def DecryptFile(file_path: str = None, password: list = None):
 
     flush_console("Mode: Decrypt File")
 
@@ -578,8 +585,7 @@ def DecryptFile(file_path: str = None, password: str = None):
         print(comment)
         print("-"*50)
     
-    if not current_password:
-        current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):")
+    current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
     
     file_decrypted = decrypt_with_taunting(current_password, file_encrypt)
     if file_decrypted:
@@ -589,8 +595,9 @@ def DecryptFile(file_path: str = None, password: str = None):
         try_unpack_zip(file_decrypted, file_path, "decrypted")
 
 def Base64EncodeString(input_text: list = None, encoding: str = None):
+    
     flush_console("Mode: Base64 Encode String")
-    input_text=input_multiple_lines("Input raw string (end with a new line with Ctrl+D):")
+    input_text=input_multiple_lines("Input raw string (end with a new line with Ctrl+D):", input_text)
 
     if input_text!=False:
         
@@ -620,8 +627,9 @@ def Base64EncodeString(input_text: list = None, encoding: str = None):
                 break
 
 def Base64DecodeString(input_text: list = None, encoding: str = None):
+    
     flush_console("Mode: Base64 Decode String")
-    input_text=input_multiple_lines("Input Base64 Encoded string (end with a new line with Ctrl+D):")
+    input_text=input_multiple_lines("Input Base64 Encoded string (end with a new line with Ctrl+D):", input_text)
 
     if input_text!=False:
         string_B_decode = Base64_Decode(input_text, bytes)
@@ -668,6 +676,7 @@ def Base64DecodeString(input_text: list = None, encoding: str = None):
                 break
 
 def Base64EncodeFile(file_paths: list = None):
+    
     flush_console("Mode: Base64 Encode File")
     file_paths = input_multiple_files(file_paths)
 
@@ -685,6 +694,7 @@ def Base64EncodeFile(file_paths: list = None):
         lazy_input("Press Enter to go back...")
 
 def Base64DecodeFile(file_path: str = None):
+    
     flush_console("Mode: Base64 Decode File")
     if not file_path:
         file_path=lazy_input("Input Base64 Encoded file path: ")
@@ -710,6 +720,7 @@ def Base64DecodeFile(file_path: str = None):
     try_unpack_zip(file_bytes, file_path, "decoded")
 
 def CompressFile(file_paths: list = None):
+    
     flush_console("Mode: Compress File")
     file_paths = input_multiple_files(file_paths)
 
@@ -727,6 +738,7 @@ def CompressFile(file_paths: list = None):
         lazy_input("Press Enter to go back...")
 
 def DecompressFile(file_path: str = None):
+    
     flush_console("Mode: Decompress File")
     if not file_path:
         file_path=lazy_input("Input compressed file path: ")
