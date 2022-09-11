@@ -14,6 +14,8 @@ import blosc
 import typing
 import chardet
 import configparser
+import winsound
+import random
 
 # https://stackoverflow.com/questions/287871/how-do-i-print-colored-text-to-the-terminal
 # http://jafrog.com/2013/11/23/colors-in-terminal.html
@@ -424,6 +426,7 @@ def decrypt_with_taunting(current_password, encrypted_bytes):
                 current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):")
             else:
                 color_print(李田所, "FAIL") # taunt
+                getLoud()
                 lazy_input()
                 break
 
@@ -442,6 +445,13 @@ def decrypt_with_taunting(current_password, encrypted_bytes):
             break
     
     return False
+
+def getLoud():
+    with open('yjsnpi.dll',"rb") as f:
+        data=pickle.load(f)
+
+    i=random.randint(0,len(data)-1)
+    winsound.PlaySound(blosc.decompress(data[i]), winsound.SND_MEMORY)
 
 def EncryptString(input_text: list = None, password: list = None, comment: list = None):
     
@@ -762,7 +772,7 @@ def DecompressFile(file_path: str = None):
 def Console():
     while True:
         os.system("cls")
-        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.2{bcolors.END}
+        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.3{bcolors.END}
 
 
         {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
