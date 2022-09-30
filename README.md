@@ -46,6 +46,7 @@ build into One-Folder :
 Finally, move these 2 things into `./dist/EncryptionTools`
 
 - yjsnpi.dll (taunting)
+- leet.dll (leetspeak)
 - context_menu.reg (Registry template)
 - setup.bat (Add registry for context menu)
 - [singleinstance.exe](https://github.com/zenden2k/context-menu-launcher/releases) (Support passing multiple files to shell context menu command)
