@@ -195,6 +195,40 @@ def Decompress_Load(file_path):
     
     return data
 
+def Leet_Encode(raw_text, standard):
+    with open("leet.dll", "rb") as f:
+        leet_dict=pickle.loads(blosc.decompress(f.read()))[0]
+
+    leet_text=""
+    for i in raw_text:
+        i=i.lower()
+        if leet_dict.get(i)!=None:
+            if standard:
+                leet_text+=leet_dict[i][0]
+            else:
+                leet_text+=leet_dict[i][random.randint(0,len(leet_dict[i])-1)]
+        else:
+            leet_text+=i
+    
+    return leet_text
+
+def Leet_Decode(leet_text):
+    with open("leet.dll", "rb") as f:
+        leet_reverse_dict=pickle.loads(blosc.decompress(f.read()))[1]
+
+    raw_text=""
+    for i in leet_text:
+        found=False
+        for j in leet_reverse_dict:
+            if i in j:
+                raw_text+=leet_reverse_dict[j]
+                found=True
+                break
+        if not found:
+            raw_text+=i
+    
+    return raw_text
+
 def fix_path(file_path: str):
     file_path=file_path.strip()
     if file_path:
@@ -769,16 +803,59 @@ def DecompressFile(file_path: str = None):
     file_path = file_path.replace(".compress","")
     try_unpack_zip(file_bytes, file_path, "decompressed")
 
+def LeetEncodeString(input_text: list = None, standard: bool = None):
+    flush_console("Mode: Leet Encode String")
+    input_text=input_multiple_lines("Input raw string (end with a new line with Ctrl+D):", input_text)
+
+    if input_text!=False:
+        if standard==None:
+            flush_console("Mode: Leet Encode String")
+            standard = lazy_input("Standard Leet? Y/N: ")
+
+            if standard!=False:
+                if standard.lower()=="y":
+                    standard=True
+                else:
+                    standard=False
+            else:
+                return
+        
+        flush_console("Mode: Leet Encode String")
+        if standard:
+            print("Using standard leet...")
+        else:
+            print("Using random leet...")
+        
+        string_encode = Leet_Encode(input_text, standard)
+        pyperclip.copy(string_encode)
+        color_print("The Leet string is in your clipboard!\n", "BOK")
+        lazy_input("Press Enter to go back...")
+
+def LeetDecodeString(input_text: list = None):
+    
+    flush_console("Mode: Leet Decode String")
+    input_text=input_multiple_lines("Input Leet string (end with a new line with Ctrl+D):", input_text)
+
+    if input_text!=False:
+        string_decode = Leet_Decode(input_text)
+        flush_console("Mode: Leet Decode String")
+        print("-"*50)
+        print(string_decode)
+        print("-"*50)
+        pyperclip.copy(string_decode)
+        color_print("The Leet Decoded string is in your clipboard!\n", "BOK")
+        lazy_input("Press Enter to go back...")
+
 def Console():
     while True:
         os.system("cls")
-        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.3{bcolors.END}
+        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.4{bcolors.END}
 
 
         {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
         {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
-        {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}
-        {bcolors.LIGHT_GREEN}04.{bcolors.END} {bcolors.UNDERLINE}Decrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}08.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode File{bcolors.END}
+        {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}               {bcolors.LIGHT_GREEN}11.{bcolors.END} {bcolors.UNDERLINE}Leet Encode String{bcolors.END}
+        {bcolors.LIGHT_GREEN}04.{bcolors.END} {bcolors.UNDERLINE}Decrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}08.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode File{bcolors.END}               {bcolors.LIGHT_GREEN}12.{bcolors.END} {bcolors.UNDERLINE}Leet Decode String{bcolors.END}
 
 """)
         print(f"                                        {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Exit: Ctrl+C{bcolors.END}\n")
@@ -812,6 +889,10 @@ def Console():
             CompressFile()
         elif mode == 10:
             DecompressFile()
+        elif mode == 11:
+            LeetEncodeString()
+        elif mode == 12:
+            LeetDecodeString()
         else:
             continue
 
@@ -821,6 +902,7 @@ def Command(args):
     func=mode_dict[mode]
     inputs=args.inputs
     comment=args.comment
+    standard=args.standard
     
     if mode in ["ecs","dcs","ecf","dcf"]:
         password=args.password
@@ -860,7 +942,12 @@ def Command(args):
                 inputs=inputs[0]
         
         func(inputs)
-
+    
+    elif mode=="les":
+        func(inputs, standard)
+    elif mode=="lds":
+        func(inputs)
+    
 def load_config():
     global WIDTH
     global DELAY_NORMAL
@@ -928,6 +1015,8 @@ mode_dict={
     "bdf": Base64DecodeFile,
     "cpf": CompressFile,
     "dpf": DecompressFile,
+    "les": LeetEncodeString,
+    "lds": LeetDecodeString,
 }
 
 load_config()
@@ -948,6 +1037,8 @@ if __name__=="__main__":
         Base64 Decode File              bdf
         Compress File                   cpf
         Decompress File                 dpf
+        Leet Encode String              les
+        Leet Decode String              lds
     """, formatter_class=argparse.RawTextHelpFormatter, argument_default=argparse.SUPPRESS)
 
     parser.add_argument('inputs', type=str, nargs="*", default=None, help='inputs')
@@ -955,6 +1046,7 @@ if __name__=="__main__":
     parser.add_argument('-p', dest="password", nargs="*", type=str, default=None, help='password for ecs, dcs, ecf, dcf')
     parser.add_argument('-c', dest="comment", nargs="*", type=str, default=None, help='comment for ecs, ecf')
     parser.add_argument('-e', dest="encoding", type=str, default=None, help='encoding for bes, bds')
+    parser.add_argument('-s', dest="standard", action="store_true", default=False, help='standard for les')
     args = parser.parse_args()
     if args.mode!="Console":
         OPEN_EXPLOER=False
