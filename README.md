@@ -22,6 +22,8 @@ Options:
 | Base64 Decode File   | bdf       |
 | Compress File        | cpf       |
 | Decompress File      | dpf       |
+| Leet Encode String   | les       |
+| Leet Decode String   | lds       |
 
 # Installation
 

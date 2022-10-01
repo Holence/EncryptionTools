@@ -15,29 +15,42 @@ Windows Registry Editor Version 5.00
 @="\"ROOT_PATH\\EncryptionTools.exe\""
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\b_encryptstring]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\b_encrypts]
 @="Encrypt String"
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\b_encryptstring\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\b_encrypts\command]
 @="\"ROOT_PATH\\EncryptionTools.exe\" -m ecs"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\c_decryptstring]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\c_decrypts]
 @="Decrypt String"
 "CommandFlags"=dword:00000040
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\c_decryptstring\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\c_decrypts\command]
 @="\"ROOT_PATH\\EncryptionTools.exe\" -m dcs"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\d_encodestring]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\d_encodes]
 @="Encode String"
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\d_encodestring\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\d_encodes\command]
 @="\"ROOT_PATH\\EncryptionTools.exe\" -m bes"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\e_decodestring]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\e_decodes]
 @="Decode String"
-[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\e_decodestring\command]
+"CommandFlags"=dword:00000040
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\e_decodes\command]
 @="\"ROOT_PATH\\EncryptionTools.exe\" -m bds"
+
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\f_leete]
+@="Leet -> 1337"
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\f_leete\command]
+@="\"ROOT_PATH\\EncryptionTools.exe\" -m les"
+
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell]
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\g_leetd]
+@="1337 -> Leet"
+[HKEY_CURRENT_USER\Software\Classes\Directory\Background\shell\EncryptionTools\shell\g_leetd\command]
+@="\"ROOT_PATH\\EncryptionTools.exe\" -m lds"
 
 
 
@@ -56,21 +69,21 @@ Windows Registry Editor Version 5.00
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100"
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\b_encryptfile]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\b_encryptf]
 @="Encrypt File"
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\b_encryptfile\command]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\b_encryptf\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m ecf"
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\c_encodefile]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\c_encodef]
 @="Encode File"
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\c_encodefile\command]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\c_encodef\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m bef"
 
 [HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\d_compressfile]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\d_compressf]
 @="Compress File"
-[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\d_compressfile\command]
+[HKEY_CURRENT_USER\Software\Classes\*\shell\EncryptionTools\shell\d_compressf\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m cpf"
 
 
@@ -90,21 +103,21 @@ Windows Registry Editor Version 5.00
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\b_encryptfile]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\b_encryptf]
 @="Encrypt File"
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\b_encryptfile\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\b_encryptf\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m ecf"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\c_encodefile]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\c_encodef]
 @="Encode File"
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\c_encodefile\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\c_encodef\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m bef"
 
 [HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell]
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\d_compressfile]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\d_compressf]
 @="Compress File"
-[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\d_compressfile\command]
+[HKEY_CURRENT_USER\Software\Classes\Directory\shell\EncryptionTools\shell\d_compressf\command]
 @="\"ROOT_PATH\\singleinstance.exe\" \"%1\" \"ROOT_PATH\\EncryptionTools.exe\" $files --si-timeout 100 -m cpf"
 
 

@@ -1022,6 +1022,7 @@ mode_dict={
 load_config()
 
 if __name__=="__main__":
+    os.chdir(os.path.dirname(__file__))
     os.system("chcp 65001")
 
     import argparse
