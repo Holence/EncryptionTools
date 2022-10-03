@@ -263,6 +263,14 @@ def zip_files(zip_file_path, file_paths):
                             os.path.join(root, file),
                             os.path.relpath(os.path.join(root, file),os.path.join(fp, '..'))
                         )
+                    
+                    empty_dirs = [dir for dir in dirs if os.listdir(os.path.join(root, dir)) == []]
+                    for dir in empty_dirs:  
+                        myzip.write(
+                            os.path.join(root, dir) + "/", 
+                            os.path.relpath(os.path.join(root, dir),os.path.join(fp, '..'))
+                        )
+                    
             elif os.path.isfile(fp):
                 myzip.write(
                     fp,
