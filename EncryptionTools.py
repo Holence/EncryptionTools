@@ -406,7 +406,7 @@ def input_multiple_files(file_paths=None):
 
 def flush_console(title):
     os.system("cls")
-    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}{title}{bcolors.END}\n")
+    print(f"{bcolors.LIGHT_PINK}{bcolors.ITALIC}{'%-78s'%title}{bcolors.LIGHT_BLACK}Version {VERSION}{bcolors.END}{bcolors.END}\n")
 
 def get_zipped_bytes(file_paths):
     zip_file_path= os.path.join(os.path.dirname(file_paths[0]), str(uuid.uuid4())+".zip")
@@ -857,9 +857,8 @@ def LeetDecodeString(input_text: list = None):
 def Console():
     while True:
         os.system("cls")
-        mode = print(f"""{bcolors.LIGHT_PINK}Select Mode:{bcolors.END}                                                                  {bcolors.LIGHT_BLACK}Version 1.0.0.4{bcolors.END}
-
-
+        flush_console("Select Mode:")
+        mode = print(f"""\
         {bcolors.LIGHT_GREEN}01.{bcolors.END} {bcolors.UNDERLINE}Encrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}05.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode String{bcolors.END}             {bcolors.LIGHT_GREEN}09.{bcolors.END} {bcolors.UNDERLINE}Compress File{bcolors.END}
         {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
         {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}               {bcolors.LIGHT_GREEN}11.{bcolors.END} {bcolors.UNDERLINE}Leet Encode String{bcolors.END}
@@ -1008,6 +1007,7 @@ taunts_and_responses=[
  　　▀██▅▇▀
 """
 
+VERSION="1.0.0.5"
 WIDTH=32
 DELAY_NORMAL=0.07
 DELAY_STOP=0.56
