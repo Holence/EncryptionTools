@@ -2,10 +2,11 @@ import codecs
 import msvcrt
 from time import sleep
 import uuid
-from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.padding import PKCS7
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import base64, pickle
 import zipfile
 import os
@@ -66,76 +67,50 @@ def color_print(s, mode):
     elif mode=="WARNING":
         print(f"{bcolors.UNDERLINE}{bcolors.BOLD}{bcolors.YELLOW}{s}{bcolors.END}")
 
-def Generate_Key(password):
-    """
-    根据password生成一个固定的salt，用salt生成一个PBKDF2，用PBKDF2和password生成key
-    所以给定一个固定的password，将返回那个固定的key。
-    """
-    salt=password.encode()[::-1]
-    password=password.encode()
-    kdf=PBKDF2HMAC(algorithm=hashes.SHA256(),length=32,salt=salt,iterations=100000,backend=default_backend())
-    key=base64.urlsafe_b64encode(kdf.derive(password))
-    return key
-
-def Fernet_Encrypt_Save(password: str, data, file_path):
+def AES_Encrypt(password: str, data):
     try:
         if type(data)!=bytes:
             data=pickle.dumps(data)
         
-        key=Generate_Key(password)
+        # generate password
+        salt = os.urandom(16)
+        iv = os.urandom(16)
+        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 480000, backend=default_backend())
+        password = kdf.derive(password.encode())
 
-        fer=Fernet(key)
-        encrypt_data=fer.encrypt(data)
-        
-        if not os.path.exists(os.path.dirname(os.path.abspath(file_path))):
-            os.makedirs(os.path.dirname(file_path))
-        
-        with open(file_path,"wb") as f:
-            f.write(blosc.compress(encrypt_data, cname="zlib"))
-        
-        return True
-    except Exception as e:
-        color_print(e, "FAIL")
-        return False
+        # pad data
+        padder = PKCS7(128).padder()
+        data = padder.update(data) + padder.finalize()
 
-def Fernet_Decrypt_Load(password: str, file_path):
-    try:
-        key=Generate_Key(password)
-        
-        with open(file_path,"rb") as f:
-            data=blosc.decompress(f.read())
-        
-        fer=Fernet(key)
-        decrypt_data=fer.decrypt(data)
-        try:
-            decrypt_data=pickle.loads(decrypt_data)
-        except:
-            pass
+        # encrypt
+        cipher = Cipher(algorithms.AES(password), modes.CBC(iv), backend=default_backend())
+        encryptor = cipher.encryptor()
+        encrypt_data = encryptor.update(data) + encryptor.finalize()
 
-        return decrypt_data
-    except:
-        return False
+        encrypt_data = base64.b64encode(salt + encrypt_data + iv)
 
-def Fernet_Encrypt(password: str, data):
-    try:
-        if type(data)!=bytes:
-            data=pickle.dumps(data)
-        
-        key=Generate_Key(password)
-
-        fer=Fernet(key)
-        encrypt_data=fer.encrypt(data)
-        
         return encrypt_data
     except:
         return False
 
-def Fernet_Decrypt(password: str, data: bytes):
+def AES_Decrypt(password: str, data):
     try:
-        key=Generate_Key(password)
-        
-        fer=Fernet(key)
-        decrypt_data=fer.decrypt(data)
+        # re-generate password from
+        encrypted_obj = base64.b64decode(data)
+        salt = encrypted_obj[0:16]
+        iv = encrypted_obj[-16:]
+        cypher_text = encrypted_obj[16:-16]
+        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 480000, backend=default_backend())
+        password = kdf.derive(password.encode())
+
+        # decrypt
+        cipher = Cipher(algorithms.AES(password), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        padded_text = decryptor.update(cypher_text) + decryptor.finalize()
+
+        # remove padding
+        unpadder = PKCS7(128).unpadder()
+        decrypt_data = unpadder.update(padded_text) + unpadder.finalize()
         
         try:
             decrypt_data=pickle.loads(decrypt_data)
@@ -473,7 +448,7 @@ def decrypt_with_taunting(current_password, encrypted_bytes):
                 break
 
         if current_password!=False:
-            decrypted = Fernet_Decrypt(current_password, encrypted_bytes)
+            decrypted = AES_Decrypt(current_password, encrypted_bytes)
             if decrypted:
                 return decrypted
             else:
@@ -516,7 +491,7 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 
                 packed_bytes=pickle.dumps({
                     "comment": comment,
-                    "bytes": blosc.compress(Fernet_Encrypt(password, bytes(input_text, encoding="utf-8")), cname="zstd")
+                    "bytes": blosc.compress(AES_Encrypt(password, bytes(input_text, encoding="utf-8")), cname="zstd")
                 })
                 string_encrypt = packed_bytes.hex()
                 string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
@@ -585,7 +560,7 @@ def EncryptFile(file_paths: list = None, password: list = None, comment: list = 
                 flush_console("Mode: Encrypt File")
                 print("Encrypting...")
                 
-                encrypted_bytes = Fernet_Encrypt(password, files_bytes)
+                encrypted_bytes = AES_Encrypt(password, files_bytes)
                 dst_file_path = file_paths[0]+".encrypt"
                 
                 packed_bytes=pickle.dumps({
@@ -1007,7 +982,7 @@ taunts_and_responses=[
  　　▀██▅▇▀
 """
 
-VERSION="1.0.0.5"
+VERSION="1.0.0.6"
 WIDTH=32
 DELAY_NORMAL=0.07
 DELAY_STOP=0.56
