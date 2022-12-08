@@ -449,7 +449,7 @@ def decrypt_with_taunting(current_password, encrypted_bytes):
 
         if current_password!=False:
             decrypted = AES_Decrypt(current_password, encrypted_bytes)
-            if decrypted:
+            if decrypted is not False:
                 return decrypted
             else:
                 WRONG=True
