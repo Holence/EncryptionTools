@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.padding import PKCS7
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-import base64, pickle
+import base64, pickle, json
 import zipfile
 import os
 import pyperclip
@@ -67,15 +67,13 @@ def color_print(s, mode):
     elif mode=="WARNING":
         print(f"{bcolors.UNDERLINE}{bcolors.BOLD}{bcolors.YELLOW}{s}{bcolors.END}")
 
-def AES_Encrypt(password: str, data):
+def AES_Encrypt(password: str, data: bytes, comment: str = "") -> bytes:
     try:
-        if type(data)!=bytes:
-            data=pickle.dumps(data)
         
         # generate password
         salt = os.urandom(16)
         iv = os.urandom(16)
-        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 480000, backend=default_backend())
+        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, ITERATION, backend=default_backend())
         password = kdf.derive(password.encode())
 
         # pad data
@@ -87,26 +85,52 @@ def AES_Encrypt(password: str, data):
         encryptor = cipher.encryptor()
         encrypt_data = encryptor.update(data) + encryptor.finalize()
 
-        encrypt_data = base64.b64encode(salt + encrypt_data + iv)
+        dump={
+            "comment": base64.b64encode(bytes(comment, encoding="utf-8")).decode("ascii"),
+            "bytes": base64.b64encode(salt + encrypt_data + iv).decode("ascii"),
+        }
+        
+        dump = base64.b64encode(bytes(json.dumps(dump), encoding="ascii"))
 
-        return encrypt_data
+        return dump
     except:
         return False
 
-def AES_Decrypt(password: str, data):
+def getComment(encrypt_data):
+    try:
+        if type(encrypt_data)==bytes:
+            return base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["comment"]).decode("utf-8")
+        elif type(encrypt_data)==str:
+            return base64.b64decode(json.loads(base64.b64decode(encrypt_data).decode("ascii"))["comment"]).decode("utf-8")
+        else:
+            return ""
+    except:
+        return ""
+
+def AES_Decrypt(password: str, encrypt_data):
     try:
         # re-generate password from
-        encrypted_obj = base64.b64decode(data)
+        if type(encrypt_data)==bytes:
+            try:
+                encrypted_obj = base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["bytes"])
+            except Exception as e:
+                color_print(e, "FAIL")
+                print("Trying old method...")
+                encrypted_obj=base64.b64decode(encrypt_data)
+        
+        elif type(encrypt_data)==str:
+            encrypted_obj = base64.b64decode(json.loads(base64.b64decode(encrypt_data).decode("ascii"))["bytes"])
+        
         salt = encrypted_obj[0:16]
         iv = encrypted_obj[-16:]
-        cypher_text = encrypted_obj[16:-16]
-        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, 480000, backend=default_backend())
+        ciphertext = encrypted_obj[16:-16]
+        kdf = PBKDF2HMAC(hashes.SHA512(), 32, salt, ITERATION, backend=default_backend())
         password = kdf.derive(password.encode())
 
         # decrypt
         cipher = Cipher(algorithms.AES(password), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
-        padded_text = decryptor.update(cypher_text) + decryptor.finalize()
+        padded_text = decryptor.update(ciphertext) + decryptor.finalize()
 
         # remove padding
         unpadder = PKCS7(128).unpadder()
@@ -303,7 +327,7 @@ def slow_print(s):
             break
     print()
 
-def input_multiple_lines(placeholder, text_list=None):
+def input_multiple_lines(placeholder, text_list=None) -> str:
     sentinel = ""
     print(placeholder)
     print("-"*50)
@@ -489,11 +513,7 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 flush_console("Mode: Encrypt String")
                 print("Encrypting...")
                 
-                packed_bytes=pickle.dumps({
-                    "comment": comment,
-                    "bytes": blosc.compress(AES_Encrypt(password, bytes(input_text, encoding="utf-8")), cname="zstd")
-                })
-                string_encrypt = packed_bytes.hex()
+                string_encrypt=AES_Encrypt(password, bytes(input_text, encoding="utf-8"), comment).decode("ascii")
                 string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
                 color_print("Encryption Successed!", "GOK")
                 pyperclip.copy(string_encrypt)
@@ -506,7 +526,7 @@ def DecryptString(input_text: str = None, password: list = None):
     input_text=input_multiple_lines("Input encrypted string (end with a new line with Ctrl+D):", input_text)
     if input_text!=False:
         try:
-            packed_bytes = pickle.loads(bytes.fromhex(input_text))
+            packed_bytes = input_text.encode("ascii")
         except Exception as e:
             flush_console("Mode: Decrypt String")
             color_print(e, "FAIL")
@@ -515,8 +535,7 @@ def DecryptString(input_text: str = None, password: list = None):
     else:
         return
     
-    comment=packed_bytes["comment"]
-    string_encrypt=blosc.decompress(packed_bytes["bytes"])
+    comment=getComment(packed_bytes)
     
     flush_console("Mode: Decrypt String")
     print("Comment:")
@@ -526,7 +545,7 @@ def DecryptString(input_text: str = None, password: list = None):
     
     current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
     
-    string_decrypted=decrypt_with_taunting(current_password, string_encrypt)
+    string_decrypted=decrypt_with_taunting(current_password, packed_bytes)
     if string_decrypted!=False:
         string_decrypted=string_decrypted.decode("utf-8")
         flush_console("Mode: Decrypt String")
@@ -560,15 +579,11 @@ def EncryptFile(file_paths: list = None, password: list = None, comment: list = 
                 flush_console("Mode: Encrypt File")
                 print("Encrypting...")
                 
-                encrypted_bytes = AES_Encrypt(password, files_bytes)
+                encrypted_bytes = AES_Encrypt(password, files_bytes, comment)
                 dst_file_path = file_paths[0]+".encrypt"
                 
-                packed_bytes=pickle.dumps({
-                    "comment": comment,
-                    "bytes": encrypted_bytes
-                })
                 with open(dst_file_path,"wb") as f:
-                    f.write(blosc.compress(packed_bytes, cname="zlib"))
+                    f.write(blosc.compress(encrypted_bytes, cname="zlib"))
 
                 color_print("Encryption Successed!", "GOK")
                 open_explorer_file(dst_file_path)
@@ -586,36 +601,21 @@ def DecryptFile(file_path: str = None, password: list = None):
         else:
             return
     
-    old_method=False
-    try:
-        print("Opening encrypted file...")
-        with open(file_path,"rb") as f:
-            packed_bytes=pickle.loads(blosc.decompress(f.read()))
-    except Exception as e:
-        color_print(e, "FAIL")
-        print("Trying old method...")
-        try:
-            with open(file_path,"rb") as f:
-                file_encrypt=blosc.decompress(f.read())
-            old_method=True
-        except Exception as e:
-            color_print(e, "FAIL")
-            lazy_input()
-            return
+    print("Opening encrypted file...")
+    with open(file_path,"rb") as f:
+        packed_bytes=blosc.decompress(f.read())
 
-    if not old_method:
-        comment=packed_bytes["comment"]
-        file_encrypt=packed_bytes["bytes"]
+    comment=getComment(packed_bytes)
 
-        flush_console("Mode: Decrypt File")
-        print("Comment:")
-        print("-"*50)
-        print(comment)
-        print("-"*50)
+    flush_console("Mode: Decrypt File")
+    print("Comment:")
+    print("-"*50)
+    print(comment)
+    print("-"*50)
     
     current_password=input_multiple_lines("Input password (end with a new line with Ctrl+D):", password)
     
-    file_decrypted = decrypt_with_taunting(current_password, file_encrypt)
+    file_decrypted = decrypt_with_taunting(current_password, packed_bytes)
     if file_decrypted:
         flush_console("Mode: Decrypt File")
         color_print("Decryption Successed!", "GOK")
@@ -934,6 +934,7 @@ def load_config():
     global WIDTH
     global DELAY_NORMAL
     global DELAY_STOP
+    global ITERATION
 
     root = os.path.dirname(__file__)
     ini_path=os.path.join(root,"UserSetting.ini")
@@ -957,6 +958,12 @@ def load_config():
     except:
         pass
     config.set("DEFAULT", "DELAY_STOP", str(DELAY_STOP))
+
+    try:
+        ITERATION=config.getint("DEFAULT", "ITERATION", fallback=48000)
+    except:
+        pass
+    config.set("DEFAULT", "ITERATION", str(ITERATION))
 
     with open(ini_path, "w") as configfile:
         config.write(configfile)
@@ -982,10 +989,11 @@ taunts_and_responses=[
  　　▀██▅▇▀
 """
 
-VERSION="1.0.0.6"
+VERSION="1.0.0.7"
 WIDTH=32
 DELAY_NORMAL=0.07
 DELAY_STOP=0.56
+ITERATION=48000
 OPEN_EXPLOER=True
 mode_dict={
     "ecs": EncryptString,
