@@ -153,7 +153,10 @@ def Base64_Encode(thing, encoding_for_str="utf-8") -> str:
     else:
         res=base64.b64encode(pickle.dumps(thing)).decode("ascii")
 
-    return "\n".join([ res[i:i+WIDTH] for i in range(0, len(res), WIDTH)])
+    if WIDTH!=-1:
+        return "\n".join([ res[i:i+WIDTH] for i in range(0, len(res), WIDTH)])
+    else:
+        return res
 
 def Base64_Decode(base64_s: str, TYPE: typing.Union[str,bytes,object], encoding_for_str="utf-8"):
     try:
@@ -514,7 +517,8 @@ def EncryptString(input_text: list = None, password: list = None, comment: list 
                 print("Encrypting...")
                 
                 string_encrypt=AES_Encrypt(password, bytes(input_text, encoding="utf-8"), comment).decode("ascii")
-                string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
+                if WIDTH!=-1:
+                    string_encrypt = "\n".join([ string_encrypt[i:i+WIDTH] for i in range(0, len(string_encrypt), WIDTH)])
                 color_print("Encryption Successed!", "GOK")
                 pyperclip.copy(string_encrypt)
                 color_print("The encrypted string is in your clipboard!\n", "BOK")
@@ -829,6 +833,36 @@ def LeetDecodeString(input_text: list = None):
         color_print("The Leet Decoded string is in your clipboard!\n", "BOK")
         lazy_input("Press Enter to go back...")
 
+def EditConfig():
+    os.startfile("UserSetting.ini")
+    while True:
+        flush_console("Editing Config (Press Enter to reload Config):")
+        load_config()
+        print(f"""\
+        {bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{WIDTH}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Output Width in Encrypt String \ Base64 Encode String{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Set -1 to disable line splitting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 32{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{DELAY_NORMAL}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Normal Words' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.07{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{DELAY_STOP}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Stopwords' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.56{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{ITERATION}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Iteration of key generation in Encrypt \ Decrypt{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> {bcolors.BOLD}Decryption error with wrong password could be caused by inconsistent iteration{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 48000{bcolors.END}
+
+
+                                        {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Back: Ctrl+C{bcolors.END}
+""")
+        if lazy_input("                                        ")==False:
+            break
+
 def Console():
     while True:
         os.system("cls")
@@ -838,8 +872,8 @@ def Console():
         {bcolors.LIGHT_GREEN}02.{bcolors.END} {bcolors.UNDERLINE}Decrypt String{bcolors.END}           {bcolors.LIGHT_GREEN}06.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode String{bcolors.END}             {bcolors.LIGHT_GREEN}10.{bcolors.END} {bcolors.UNDERLINE}Decompress File{bcolors.END}
         {bcolors.LIGHT_GREEN}03.{bcolors.END} {bcolors.UNDERLINE}Encrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}07.{bcolors.END} {bcolors.UNDERLINE}Base64 Encode File{bcolors.END}               {bcolors.LIGHT_GREEN}11.{bcolors.END} {bcolors.UNDERLINE}Leet Encode String{bcolors.END}
         {bcolors.LIGHT_GREEN}04.{bcolors.END} {bcolors.UNDERLINE}Decrypt File{bcolors.END}             {bcolors.LIGHT_GREEN}08.{bcolors.END} {bcolors.UNDERLINE}Base64 Decode File{bcolors.END}               {bcolors.LIGHT_GREEN}12.{bcolors.END} {bcolors.UNDERLINE}Leet Decode String{bcolors.END}
-
 """)
+        print(f"                                        {bcolors.PURPLE}{bcolors.BOLD}{bcolors.ITALIC}9961. Edit Config{bcolors.END}\n")
         print(f"                                        {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Exit: Ctrl+C{bcolors.END}\n")
         
         mode = lazy_input("                                        ")
@@ -875,6 +909,8 @@ def Console():
             LeetEncodeString()
         elif mode == 12:
             LeetDecodeString()
+        elif mode == 9961:
+            EditConfig()
         else:
             continue
 
