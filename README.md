@@ -1,6 +1,6 @@
 # EncryptionTools
 
-A tool that integrates AES encryption, Base64 encoding, Leetspeak encoding and Blosc compression.
+A Terminal tool that integrates AES encryption, Base64 encoding, Leetspeak encoding and Blosc compression.
 
 Features:
 
