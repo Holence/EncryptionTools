@@ -1,5 +1,7 @@
 # EncryptionTools
 
+Here is a [android version](https://github.com/Holence/EncryptionTools-Flutter) (still in development).
+
 A Terminal tool that integrates AES encryption, Base64 encoding, Leetspeak encoding and Blosc compression.
 
 Features:
