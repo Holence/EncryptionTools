@@ -883,11 +883,11 @@ def EditConfig():
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 48000{bcolors.END}
         
         {bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[1]}{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Normal Words' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Normal Words' Delay in Decrypt{bcolors.END}
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.07{bcolors.END}
         
         {bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[2]}{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Stopwords' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Stopwords' Delay in Decrypt{bcolors.END}
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.56{bcolors.END}
         
         {bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[3]}{bcolors.END}
