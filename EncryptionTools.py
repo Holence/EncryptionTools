@@ -901,20 +901,20 @@ def EditConfig():
         
         move(pos[current_pos_index][0], 8)
         if current_pos_index==0:
-            print(f"{bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[0]}{bcolors.END}", end="", flush=True)
+            print(f"{bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.LIGHT_BLACK}{bcolors.UNDERLINE}{config_list[0]}{bcolors.END}", end="", flush=True)
         elif current_pos_index==1:
-            print(f"{bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[1]}{bcolors.END}", end="", flush=True)
+            print(f"{bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.LIGHT_BLACK}{bcolors.UNDERLINE}{config_list[1]}{bcolors.END}", end="", flush=True)
         elif current_pos_index==2:
-            print(f"{bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[2]}{bcolors.END}", end="", flush=True)
+            print(f"{bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.LIGHT_BLACK}{bcolors.UNDERLINE}{config_list[2]}{bcolors.END}", end="", flush=True)
         elif current_pos_index==3:
-            print(f"{bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[3]}{bcolors.END}", end="", flush=True)
+            print(f"{bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.LIGHT_BLACK}{bcolors.UNDERLINE}{config_list[3]}{bcolors.END}", end="", flush=True)
         move(*pos[current_pos_index])
         listen=1
         index_offset=0
         s=""
         while True:
             c=msvcrt.getwch()
-            if c=="\x00":
+            if c=="\x00" or c=="\xe0":
                 listen=0
                 continue
             if listen==0:
