@@ -96,30 +96,22 @@ def AES_Encrypt(password: str, data: bytes, comment: str = "") -> bytes:
     except:
         return False
 
-def getComment(encrypt_data):
+def getComment(encrypt_data: bytes):
     try:
-        if type(encrypt_data)==bytes:
-            return base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["comment"]).decode("utf-8")
-        elif type(encrypt_data)==str:
-            return base64.b64decode(json.loads(base64.b64decode(encrypt_data).decode("ascii"))["comment"]).decode("utf-8")
-        else:
-            return ""
+        return base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["comment"]).decode("utf-8")
     except:
         return ""
 
-def AES_Decrypt(password: str, encrypt_data):
+def AES_Decrypt(password: str, encrypt_data: bytes):
     try:
         # re-generate password from
-        if type(encrypt_data)==bytes:
-            try:
-                encrypted_obj = base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["bytes"])
-            except Exception as e:
-                color_print(e, "FAIL")
-                print("Trying old method...")
-                encrypted_obj=base64.b64decode(encrypt_data)
         
-        elif type(encrypt_data)==str:
-            encrypted_obj = base64.b64decode(json.loads(base64.b64decode(encrypt_data).decode("ascii"))["bytes"])
+        try:
+            encrypted_obj = base64.b64decode(json.loads(base64.b64decode(encrypt_data.decode("ascii")).decode("ascii"))["bytes"])
+        except Exception as e:
+            color_print(e, "FAIL")
+            print("Trying old method...")
+            encrypted_obj=base64.b64decode(encrypt_data)
         
         salt = encrypted_obj[0:16]
         iv = encrypted_obj[-16:]
@@ -289,17 +281,18 @@ def unzip_file(zip_file_path, dst_path):
                 if os.path.exists(file_path):
                     color_print("%s already exsit"%file_path, "FAIL")
                     safe=False
+                    break
 
             if safe:
                 zip_file.extractall(dst_path)
                 return safe
             else:
-                pass
+                color_print("ZIP file will be retained at %s\nProcess terminated..."%zip_file_path, "WARNING")
+                return zip_file_path
         
-        color_print("ZIP file will be retained at %s. Process terminated..."%zip_file_path, "WARNING")
-        return safe
     except Exception as e:
-        raise e
+        color_print(e, "FAIL")
+        return False
 
 def open_explorer_file(file_path):
     if OPEN_EXPLOER:
@@ -428,33 +421,47 @@ def get_zipped_bytes(file_paths):
     return files_bytes
 
 def try_unpack_zip(file_bytes, file_path, operation_text):
-    try:
-        zip_file_path= os.path.join(os.path.dirname(file_path), str(uuid.uuid4())+".zip")
+    root=os.path.dirname(file_path)
+    if type(file_bytes)==bytes:
+        zip_file_path= os.path.join(root, str(uuid.uuid4())+".zip")
         with open(zip_file_path, "wb") as f:
             f.write(file_bytes)
-        if unzip_file(zip_file_path, os.path.dirname(file_path)):
+        
+        res=unzip_file(zip_file_path, root)
+        if res==True:
             os.remove(zip_file_path)
-            color_print("The %s file is saved to %s!\n"%(operation_text, file_path), "BOK")
-        open_explorer_dir(os.path.dirname(file_path))
-        lazy_input("Press Enter to go back...")
-        return
-    except Exception as e:
-        color_print(e, "FAIL")
-    
-    os.remove(zip_file_path)
-    color_print("File cannot decode as zip, it will be saved to a pickle file", "WARNING")
-    if os.path.exists(file_path+".pickle"):
-        color_print("%s already exsits!"%file_path, "FAIL")
-        n,e = os.path.splitext(file_path)
-        n = n+str(uuid.uuid4())
-        file_path = n+e
-    file_path = file_path+".pickle"
-    with open(file_path, "wb") as f:
-        pickle.dump(file_bytes, f)
-    open_explorer_file(file_path)
-    lazy_input("File saved to %s\n"%file_path)
+            color_print("The %s file is saved to %s!\n"%(operation_text, root), "BOK")
+            open_explorer_dir(root)
+        elif res==None:
+            color_print("File cannot decode as zip, it will be saved to a bytes file", "WARNING")
+            color_print("You can use TrIDNet to identify the file type", "WARNING")
+            bytes_file_path=os.path.join(root, os.path.basename(file_path)+".bytes")
+            if os.path.exists(bytes_file_path):
+                color_print("%s already exsits!"%bytes_file_path, "FAIL")
+                n,e = os.path.splitext(bytes_file_path)
+                n = n+str(uuid.uuid4())
+                bytes_file_path = n+e
+            os.rename(zip_file_path, bytes_file_path)
+            color_print("The %s file is saved to %s!\n"%(operation_text, bytes_file_path), "BOK")
+            open_explorer_file(bytes_file_path)
+        else:
+            open_explorer_file(res)
+    else:
+        color_print("File cannot decode as zip, it will be saved to a json file", "WARNING")
+        json_file_path=os.path.join(root, os.path.basename(file_path)+".json")
+        if os.path.exists(json_file_path):
+            color_print("%s already exsits!"%json_file_path, "FAIL")
+            n,e = os.path.splitext(json_file_path)
+            n = n+str(uuid.uuid4())
+            json_file_path = n+e
+        with open(json_file_path, "w", encoding="utf-8") as f:
+            json.dump(file_bytes, f, ensure_ascii=False, indent=4)
+        color_print("The %s file is saved to %s!\n"%(operation_text, json_file_path), "BOK")
+        open_explorer_file(json_file_path)
 
-def decrypt_with_taunting(current_password, encrypted_bytes):
+    lazy_input("Press Enter to go back...")
+
+def decrypt_with_taunting(current_password, encrypted_bytes: bytes):
     try_times=0
     WRONG=False
     while True:
@@ -551,15 +558,29 @@ def DecryptString(input_text: str = None, password: list = None):
     
     string_decrypted=decrypt_with_taunting(current_password, packed_bytes)
     if string_decrypted!=False:
-        string_decrypted=string_decrypted.decode("utf-8")
-        flush_console("Mode: Decrypt String")
-        color_print("Decryption Successed!","GOK")
-        print("-"*50)
-        print(string_decrypted)
-        print("-"*50)
-        pyperclip.copy(string_decrypted)
-        color_print("The decrypted string is in your clipboard!\n", "BOK")
-        lazy_input("Press Enter to go back...")
+        try:
+            string_decrypted=string_decrypted.decode("utf-8")
+            flush_console("Mode: Decrypt String")
+            color_print("Decryption Successed!","GOK")
+            print("-"*50)
+            print(string_decrypted)
+            print("-"*50)
+            pyperclip.copy(string_decrypted)
+            color_print("The decrypted string is in your clipboard!\n", "BOK")
+            lazy_input("Press Enter to go back...")
+        except Exception as e:
+            string_decrypted=str(string_decrypted)
+            flush_console("Mode: Decrypt String")
+            color_print("Decryption Successed!","GOK")
+            color_print(e, "FAIL")
+            color_print("Encrypted data cannot be decoded as string.", "WARNING")
+            print("-"*50)
+            print(string_decrypted)
+            print("-"*50)
+            pyperclip.copy(string_decrypted)
+            color_print("The decrypted data is in your clipboard!\n", "BOK")
+            lazy_input("Press Enter to go back...")
+
             
 def EncryptFile(file_paths: list = None, password: list = None, comment: list = None):
     
@@ -834,34 +855,130 @@ def LeetDecodeString(input_text: list = None):
         lazy_input("Press Enter to go back...")
 
 def EditConfig():
-    os.startfile("UserSetting.ini")
+    from ctypes import c_long, c_wchar_p, c_ulong, c_void_p, windll
+    gHandle = windll.kernel32.GetStdHandle(c_long(-11))
+    def move (y, x):
+        """Move cursor to position indicated by x and y."""
+        value = x + (y << 16)
+        windll.kernel32.SetConsoleCursorPosition(gHandle, c_ulong(value))
+
+    config_list = load_config()
+    
+    pos=[
+        (2, 19),
+        (7, 22),
+        (11, 20),
+        (15, 15),
+    ]
+    current_pos_index=0
+
     while True:
         flush_console("Editing Config (Press Enter to reload Config):")
-        load_config()
+        
+
         print(f"""\
-        {bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{WIDTH}{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Output Width in Encrypt String \ Base64 Encode String{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Set -1 to disable line splitting{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 32{bcolors.END}
-        
-        {bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{DELAY_NORMAL}{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Normal Words' Delay in decrypt_with_taunting{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.07{bcolors.END}
-        
-        {bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{DELAY_STOP}{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Stopwords' Delay in decrypt_with_taunting{bcolors.END}
-        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.56{bcolors.END}
-        
-        {bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{ITERATION}{bcolors.END}
+        {bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[0]}{bcolors.END}
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Iteration of key generation in Encrypt \ Decrypt{bcolors.END}
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> {bcolors.BOLD}Decryption error with wrong password could be caused by inconsistent iteration{bcolors.END}
         {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 48000{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[1]}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Normal Words' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.07{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[2]}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Stopwords' Delay in decrypt_with_taunting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 0.56{bcolors.END}
+        
+        {bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{config_list[3]}{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Output Width in Encrypt String \ Base64 Encode String{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Set -1 to disable line splitting{bcolors.END}
+        {bcolors.ITALIC}{bcolors.LIGHT_BLACK}> Default to 32{bcolors.END}
 
 
                                         {bcolors.RED}{bcolors.BOLD}{bcolors.ITALIC}Back: Ctrl+C{bcolors.END}
 """)
-        if lazy_input("                                        ")==False:
-            break
+        
+        move(pos[current_pos_index][0], 8)
+        if current_pos_index==0:
+            print(f"{bcolors.LIGHT_YELLOW}ITERATION: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[0]}{bcolors.END}", end="", flush=True)
+        elif current_pos_index==1:
+            print(f"{bcolors.LIGHT_YELLOW}DELAY_NORMAL: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[1]}{bcolors.END}", end="", flush=True)
+        elif current_pos_index==2:
+            print(f"{bcolors.LIGHT_YELLOW}DELAY_STOP: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[2]}{bcolors.END}", end="", flush=True)
+        elif current_pos_index==3:
+            print(f"{bcolors.LIGHT_YELLOW}WIDTH: {bcolors.END}{bcolors.BLACK}{bcolors.UNDERLINE}{config_list[3]}{bcolors.END}", end="", flush=True)
+        move(*pos[current_pos_index])
+        listen=1
+        index_offset=0
+        s=""
+        while True:
+            c=msvcrt.getwch()
+            if c=="\x00":
+                listen=0
+                continue
+            if listen==0:
+                listen=1
+                if c=="H":
+                    if current_pos_index > 0:
+                        index_offset = -1
+                elif c=="P":
+                    if current_pos_index < 3:
+                        index_offset = 1
+                else:
+                    continue
+                break
+            
+            if c=="\x03":
+                # Ctrl+C
+                break
+            elif c=="\r":
+                # 回车键确认
+                break
+            elif c=="\b":
+                # 退格键
+                if s:
+                    s=s[:-1]
+                    print("\b \b", end="", flush=True)
+            else:
+                print(f"{bcolors.LIGHT_GREEN}{bcolors.UNDERLINE}{c}{bcolors.END}", end="", flush=True)
+                s+=c
+        
+        # Ctrl+C 退出
+        if c=="\x03":
+            set_config(config_list)
+            return
+        
+        if current_pos_index==0:
+            try:
+                config_list[0]=int(s)
+                if config_list[0]<1:
+                    config_list[0]=48000
+            except:
+                pass
+        elif current_pos_index==1:
+            try:
+                config_list[1]=float(s)
+                if config_list[1]<0.07:
+                    config_list[1]=0.07
+            except:
+                pass
+        elif current_pos_index==2:
+            try:
+                config_list[2]=float(s)
+                if config_list[2]<0.56:
+                    config_list[2]=0.56
+            except:
+                pass
+        elif current_pos_index==3:
+            try:
+                config_list[3]=int(s)
+                if config_list[3]<1 and config_list[3]!=-1:
+                    config_list[3]=32
+            except:
+                pass
+        
+        current_pos_index+=index_offset
 
 def Console():
     while True:
@@ -967,39 +1084,60 @@ def Command(args):
         func(inputs)
     
 def load_config():
-    global WIDTH
-    global DELAY_NORMAL
-    global DELAY_STOP
-    global ITERATION
 
     root = os.path.dirname(__file__)
     ini_path=os.path.join(root,"UserSetting.ini")
     config = configparser.ConfigParser()
-    config.read(ini_path)
+    try:
+        config.read(ini_path)
+    except:
+        config.clear()
+    
+    try:
+        iteration=config.getint("DEFAULT", "ITERATION", fallback=48000)
+    except:
+        iteration=48000
+    config.set("DEFAULT", "ITERATION", str(iteration))
+    
+    try:
+        delay_normal=config.getfloat("DEFAULT", "DELAY_NORMAL", fallback=0.07)
+    except:
+        delay_normal=0.07
+    config.set("DEFAULT", "DELAY_NORMAL", str(delay_normal))
 
     try:
-        WIDTH=config.getint("DEFAULT", "WIDTH", fallback=32)
+        delay_stop=config.getfloat("DEFAULT", "DELAY_STOP", fallback=0.56)
     except:
-        pass
-    config.set("DEFAULT", "WIDTH", str(WIDTH))
+        delay_stop=0.56
+    config.set("DEFAULT", "DELAY_STOP", str(delay_stop))
 
     try:
-        DELAY_NORMAL=config.getfloat("DEFAULT", "DELAY_NORMAL", fallback=0.07)
+        width=config.getint("DEFAULT", "WIDTH", fallback=32)
     except:
-        pass
-    config.set("DEFAULT", "DELAY_NORMAL", str(DELAY_NORMAL))
+        width=32
+    config.set("DEFAULT", "WIDTH", str(width))
+    
+    with open(ini_path, "w") as configfile:
+        config.write(configfile)
+    
+    return [iteration, delay_normal, delay_stop, width]
 
-    try:
-        DELAY_STOP=config.getfloat("DEFAULT", "DELAY_STOP", fallback=0.56)
-    except:
-        pass
-    config.set("DEFAULT", "DELAY_STOP", str(DELAY_STOP))
+def set_config(args):
+    global ITERATION
+    global DELAY_NORMAL
+    global DELAY_STOP
+    global WIDTH
 
-    try:
-        ITERATION=config.getint("DEFAULT", "ITERATION", fallback=48000)
-    except:
-        pass
+    ITERATION, DELAY_NORMAL, DELAY_STOP, WIDTH = args
+
+    root = os.path.dirname(__file__)
+    ini_path=os.path.join(root,"UserSetting.ini")
+    config = configparser.ConfigParser()
+
     config.set("DEFAULT", "ITERATION", str(ITERATION))
+    config.set("DEFAULT", "DELAY_NORMAL", str(DELAY_NORMAL))
+    config.set("DEFAULT", "DELAY_STOP", str(DELAY_STOP))
+    config.set("DEFAULT", "WIDTH", str(WIDTH))
 
     with open(ini_path, "w") as configfile:
         config.write(configfile)
@@ -1025,11 +1163,7 @@ taunts_and_responses=[
  　　▀██▅▇▀
 """
 
-VERSION="1.0.0.7"
-WIDTH=32
-DELAY_NORMAL=0.07
-DELAY_STOP=0.56
-ITERATION=48000
+VERSION="1.0.0.8"
 OPEN_EXPLOER=True
 mode_dict={
     "ecs": EncryptString,
@@ -1046,7 +1180,7 @@ mode_dict={
     "lds": LeetDecodeString,
 }
 
-load_config()
+ITERATION, DELAY_NORMAL, DELAY_STOP, WIDTH = load_config()
 
 if __name__=="__main__":
     os.chdir(os.path.dirname(__file__))
